@@ -11,13 +11,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
@@ -27,15 +27,16 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.voicenotes.navigation.Screen
 import com.example.voicenotes.ui.NoteDetailsScreen
-import com.example.voicenotes.ui.OnboardingScreen
+import com.example.voicenotes.ui.SetupScreen
 import com.example.voicenotes.ui.SettingsScreen
+import com.example.voicenotes.ai.AiProvider
 import com.example.voicenotes.ui.theme.VoiceNotesTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 import com.example.voicenotes.util.AudioCacheManager
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope // Или лучше lifecycleScope, но здесь onCreate
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -44,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         
         // Очистка старых файлов в фоне
         val cacheDir = cacheDir
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             AudioCacheManager.cleanOldFiles(applicationContext)
         }
 
@@ -65,11 +66,54 @@ class MainActivity : AppCompatActivity() {
                         // Loading state (можно пустой экран или сплэш)
                         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
                     } else if (userPrefsState?.isOnboardingCompleted == false) {
-                        OnboardingScreen(
-                            viewModel = settingsViewModel,
-                            onComplete = {
-                                // OnboardingScreen сам вызывает completeOnboarding(), 
-                                // а MainActivity реактивно переключится, так как наблюдает за userPrefs
+                        var selectedProviderName by rememberSaveable(userPrefsState?.selectedProvider?.name) {
+                            mutableStateOf((userPrefsState?.selectedProvider ?: AiProvider.GEMINI).name)
+                        }
+                        val selectedProvider = AiProvider.valueOf(selectedProviderName)
+
+                        var apiKey by rememberSaveable(selectedProviderName) {
+                            mutableStateOf(
+                                when (selectedProvider) {
+                                    AiProvider.GEMINI -> userPrefsState?.geminiApiKey.orEmpty()
+                                    AiProvider.OPENAI -> userPrefsState?.openaiApiKey.orEmpty()
+                                }
+                            )
+                        }
+                        var isApiKeyVisible by rememberSaveable { mutableStateOf(false) }
+                        val isSaving by settingsViewModel.isSaving.collectAsState()
+                        val keyboardController = LocalSoftwareKeyboardController.current
+                        val uriHandler = LocalUriHandler.current
+
+                        SetupScreen(
+                            selectedProvider = selectedProvider,
+                            apiKey = apiKey,
+                            isApiKeyVisible = isApiKeyVisible,
+                            isSaving = isSaving,
+                            onProviderSelected = { provider ->
+                                selectedProviderName = provider.name
+                                apiKey = when (provider) {
+                                    AiProvider.GEMINI -> userPrefsState?.geminiApiKey.orEmpty()
+                                    AiProvider.OPENAI -> userPrefsState?.openaiApiKey.orEmpty()
+                                }
+                            },
+                            onApiKeyChanged = { apiKey = it },
+                            onApiKeyVisibilityToggle = { isApiKeyVisible = !isApiKeyVisible },
+                            onGetStartedClick = {
+                                if (apiKey.isNotBlank()) {
+                                    keyboardController?.hide()
+                                    settingsViewModel.completeSetup(selectedProvider, apiKey.trim())
+                                }
+                            },
+                            onSkipClick = {
+                                keyboardController?.hide()
+                                settingsViewModel.completeOnboarding()
+                            },
+                            onFindApiKeyClick = {
+                                val url = when (selectedProvider) {
+                                    AiProvider.GEMINI -> "https://aistudio.google.com/app/apikey"
+                                    AiProvider.OPENAI -> "https://platform.openai.com/api-keys"
+                                }
+                                uriHandler.openUri(url)
                             }
                         )
                     } else {

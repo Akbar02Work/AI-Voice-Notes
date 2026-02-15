@@ -285,7 +285,7 @@ fun EmptyState() {
             Text(
                 text = stringResource(R.string.notes_list_empty_subtitle),
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
         }

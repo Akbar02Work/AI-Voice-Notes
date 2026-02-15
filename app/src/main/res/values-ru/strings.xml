@@ -74,6 +74,18 @@
     <string name="onboarding_finish">Начать</string>
     <string name="onboarding_next">Далее</string>
     <string name="onboarding_configure">Настроить API Ключ</string>
+
+    <!-- Setup Screen -->
+    <string name="setup_title">Настройка API ключа</string>
+    <string name="setup_subtitle">Выберите AI провайдера и вставьте API ключ, чтобы начать.</string>
+    <string name="setup_select_provider">Выберите провайдера</string>
+    <string name="setup_provider_gemini">Gemini</string>
+    <string name="setup_provider_openai">OpenAI</string>
+    <string name="setup_api_key_placeholder">Введите API ключ</string>
+    <string name="setup_stored_securely">Ключ хранится безопасно на устройстве</string>
+    <string name="setup_find_api_key">Где найти API ключ?</string>
+    <string name="setup_get_started">Начать</string>
+    <string name="setup_skip">Пропустить</string>
     
     <!-- Accessibility Content Descriptions -->
     <string name="cd_notes_list_fab_recording">Идет запись. Нажмите, чтобы остановить.</string>
@@ -90,4 +102,8 @@
     <string name="cd_language_icon">Выбрать язык</string>
     <string name="cd_provider_icon">Выбрать AI провайдера</string>
     <string name="cd_api_key_icon">API Ключ</string>
+    <string name="cd_setup_key_icon">Иконка поля API ключа</string>
+    <string name="cd_setup_show_key">Показать API ключ</string>
+    <string name="cd_setup_hide_key">Скрыть API ключ</string>
+    <string name="cd_setup_arrow_icon">Продолжить</string>
 </resources>

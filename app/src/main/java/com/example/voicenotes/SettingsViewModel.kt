@@ -45,8 +45,11 @@ class SettingsViewModel @Inject constructor(
     fun setGeminiApiKey(key: String) {
         viewModelScope.launch {
             _isSaving.value = true
-            userPreferencesRepository.setGeminiApiKey(key)
-            _isSaving.value = false
+            try {
+                userPreferencesRepository.setGeminiApiKey(key)
+            } finally {
+                _isSaving.value = false
+            }
         }
     }
 
@@ -56,8 +59,11 @@ class SettingsViewModel @Inject constructor(
     fun setOpenAiApiKey(key: String) {
         viewModelScope.launch {
             _isSaving.value = true
-            userPreferencesRepository.setOpenAiApiKey(key)
-            _isSaving.value = false
+            try {
+                userPreferencesRepository.setOpenAiApiKey(key)
+            } finally {
+                _isSaving.value = false
+            }
         }
     }
 
@@ -67,8 +73,11 @@ class SettingsViewModel @Inject constructor(
     fun setProvider(provider: AiProvider) {
         viewModelScope.launch {
             _isSaving.value = true
-            userPreferencesRepository.setSelectedProvider(provider)
-            _isSaving.value = false
+            try {
+                userPreferencesRepository.setSelectedProvider(provider)
+            } finally {
+                _isSaving.value = false
+            }
         }
     }
 
@@ -78,6 +87,27 @@ class SettingsViewModel @Inject constructor(
     fun completeOnboarding() {
         viewModelScope.launch {
             userPreferencesRepository.setOnboardingCompleted(true)
+        }
+    }
+
+    /**
+     * Сохранить настройки setup-экрана и завершить первый запуск атомарно.
+     */
+    fun completeSetup(provider: AiProvider, apiKey: String) {
+        viewModelScope.launch {
+            _isSaving.value = true
+            try {
+                userPreferencesRepository.setSelectedProvider(provider)
+                if (apiKey.isNotBlank()) {
+                    when (provider) {
+                        AiProvider.GEMINI -> userPreferencesRepository.setGeminiApiKey(apiKey)
+                        AiProvider.OPENAI -> userPreferencesRepository.setOpenAiApiKey(apiKey)
+                    }
+                }
+                userPreferencesRepository.setOnboardingCompleted(true)
+            } finally {
+                _isSaving.value = false
+            }
         }
     }
 }

@@ -74,6 +74,18 @@
     <string name="onboarding_finish">Get Started</string>
     <string name="onboarding_next">Next</string>
     <string name="onboarding_configure">Configure API Key</string>
+
+    <!-- Setup Screen -->
+    <string name="setup_title">Set up your API key</string>
+    <string name="setup_subtitle">Choose your AI provider and paste your API key to get started.</string>
+    <string name="setup_select_provider">Select provider</string>
+    <string name="setup_provider_gemini">Gemini</string>
+    <string name="setup_provider_openai">OpenAI</string>
+    <string name="setup_api_key_placeholder">Enter your API key</string>
+    <string name="setup_stored_securely">Stored securely on your device</string>
+    <string name="setup_find_api_key">Where do I find my API key?</string>
+    <string name="setup_get_started">Get started</string>
+    <string name="setup_skip">Skip for now</string>
     
     <!-- Accessibility Content Descriptions -->
     <string name="cd_notes_list_fab_recording">Recording in progress. Tap to stop.</string>
@@ -90,4 +102,8 @@
     <string name="cd_language_icon">Select language</string>
     <string name="cd_provider_icon">Select AI provider</string>
     <string name="cd_api_key_icon">API Key</string>
+    <string name="cd_setup_key_icon">API key input icon</string>
+    <string name="cd_setup_show_key">Show API key</string>
+    <string name="cd_setup_hide_key">Hide API key</string>
+    <string name="cd_setup_arrow_icon">Proceed</string>
 </resources>
