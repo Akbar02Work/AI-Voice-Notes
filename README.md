@@ -27,12 +27,12 @@ key storage, and offline inference that does not treat arbitrary model files as 
 
 <table>
   <tr>
-    <th>Notes and processing</th>
+    <th>Notes list</th>
     <th>Note details and playback</th>
     <th>Settings</th>
   </tr>
   <tr>
-    <td><img src="screenshots/notes-list.jpg" alt="Notes list with processing state" width="260"></td>
+    <td><img src="screenshots/notes-list.jpg" alt="Notes list" width="260"></td>
     <td><img src="screenshots/note-details.jpg" alt="Transcribed note details" width="260"></td>
     <td><img src="screenshots/settings.jpg" alt="Appearance and language settings" width="260"></td>
   </tr>
