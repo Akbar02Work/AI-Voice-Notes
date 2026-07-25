@@ -5,7 +5,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,12 +12,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -30,32 +31,35 @@ import com.example.voicenotes.ui.NoteDetailsScreen
 import com.example.voicenotes.ui.SetupScreen
 import com.example.voicenotes.ui.SettingsScreen
 import com.example.voicenotes.ai.AiProvider
+import com.example.voicenotes.ai.CloudProviderCatalog
+import com.example.voicenotes.ai.InferenceMode
+import com.example.voicenotes.data.ThemeMode
+import com.example.voicenotes.ui.theme.VoiceNotesMotion
 import com.example.voicenotes.ui.theme.VoiceNotesTheme
+import com.example.voicenotes.util.RecordingStorage
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-
-import com.example.voicenotes.util.AudioCacheManager
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Очистка старых файлов в фоне
-        val cacheDir = cacheDir
-        CoroutineScope(Dispatchers.IO).launch {
-            AudioCacheManager.cleanOldFiles(applicationContext)
-        }
+        val recordingsDir = RecordingStorage.directory(this)
 
         enableEdgeToEdge()
         setContent {
-            VoiceNotesTheme {
+            val settingsViewModel: SettingsViewModel = hiltViewModel()
+            val userPrefsState by settingsViewModel.userPreferences.collectAsState()
+
+            VoiceNotesTheme(
+                themeMode = userPrefsState?.themeMode ?: ThemeMode.SYSTEM,
+                dynamicColor = userPrefsState?.useDynamicColor ?: true
+            ) {
                 val navController = rememberNavController()
                 val notesViewModel: NotesViewModel = hiltViewModel()
-                val settingsViewModel: SettingsViewModel = hiltViewModel()
-                val userPrefsState by settingsViewModel.userPreferences.collectAsState()
+                val modelDiscovery by settingsViewModel.modelDiscovery.collectAsState()
+                val localModels by settingsViewModel.localModels.collectAsState()
+                val secureStorageError by settingsViewModel.secureStorageError.collectAsState()
 
                 // Фон чтобы не было белой вспышки при переходах
                 Surface(
@@ -66,42 +70,165 @@ class MainActivity : AppCompatActivity() {
                         // Loading state (можно пустой экран или сплэш)
                         Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
                     } else if (userPrefsState?.isOnboardingCompleted == false) {
-                        var selectedProviderName by rememberSaveable(userPrefsState?.selectedProvider?.name) {
-                            mutableStateOf((userPrefsState?.selectedProvider ?: AiProvider.GEMINI).name)
-                        }
-                        val selectedProvider = AiProvider.valueOf(selectedProviderName)
-
-                        var apiKey by rememberSaveable(selectedProviderName) {
+                        var inferenceModeName by rememberSaveable {
                             mutableStateOf(
-                                when (selectedProvider) {
+                                (userPrefsState?.inferenceMode ?: InferenceMode.CLOUD).name
+                            )
+                        }
+                        val inferenceMode = InferenceMode.valueOf(inferenceModeName)
+
+                        var selectedProviderId by rememberSaveable(
+                            userPrefsState?.selectedProvider?.name
+                        ) {
+                            mutableStateOf(
+                                CloudProviderCatalog
+                                    .findByProvider(
+                                        userPrefsState?.selectedProvider ?: AiProvider.GEMINI
+                                    )?.id ?: "gemini"
+                            )
+                        }
+
+                        var selectedLocalModelId by rememberSaveable {
+                            mutableStateOf(userPrefsState?.selectedLocalModelId)
+                        }
+
+                        var apiKey by rememberSaveable(selectedProviderId) {
+                            val provider = CloudProviderCatalog.findById(selectedProviderId)?.provider
+                            mutableStateOf(
+                                when (provider) {
                                     AiProvider.GEMINI -> userPrefsState?.geminiApiKey.orEmpty()
                                     AiProvider.OPENAI -> userPrefsState?.openaiApiKey.orEmpty()
+                                    AiProvider.GROQ -> userPrefsState?.groqApiKey.orEmpty()
+                                    null -> ""
                                 }
                             )
+                        }
+                        var selectedTranscriptionModel by rememberSaveable(selectedProviderId) {
+                            mutableStateOf<String?>(null)
+                        }
+                        var selectedSummaryModel by rememberSaveable(selectedProviderId) {
+                            mutableStateOf<String?>(null)
                         }
                         var isApiKeyVisible by rememberSaveable { mutableStateOf(false) }
                         val isSaving by settingsViewModel.isSaving.collectAsState()
                         val keyboardController = LocalSoftwareKeyboardController.current
                         val uriHandler = LocalUriHandler.current
 
+                        LaunchedEffect(modelDiscovery.models, modelDiscovery.provider) {
+                            if (
+                                modelDiscovery.provider ==
+                                CloudProviderCatalog.findById(selectedProviderId)?.provider
+                            ) {
+                                modelDiscovery.models?.let { models ->
+                                    selectedTranscriptionModel =
+                                        selectedTranscriptionModel
+                                            ?.takeIf { selected ->
+                                                models.transcription.any { it.id == selected }
+                                            }
+                                            ?: models.transcription.firstOrNull()?.id
+                                    selectedSummaryModel =
+                                        selectedSummaryModel
+                                            ?.takeIf { selected ->
+                                                models.summarization.any { it.id == selected }
+                                            }
+                                            ?: models.summarization.firstOrNull()?.id
+                                }
+                            }
+                        }
+
                         SetupScreen(
-                            selectedProvider = selectedProvider,
+                            inferenceMode = inferenceMode,
+                            selectedProviderId = selectedProviderId,
+                            selectedLocalModelId = selectedLocalModelId,
+                            localModelStates = localModels,
                             apiKey = apiKey,
+                            availableModels = modelDiscovery.models
+                                ?.takeIf {
+                                    modelDiscovery.provider ==
+                                        CloudProviderCatalog.findById(selectedProviderId)?.provider
+                                },
+                            selectedTranscriptionModel = selectedTranscriptionModel,
+                            selectedSummaryModel = selectedSummaryModel,
+                            isCheckingKey = modelDiscovery.isLoading,
+                            modelError = if (secureStorageError) {
+                                stringResource(R.string.settings_secure_storage_error)
+                            } else {
+                                modelDiscovery.error
+                            },
                             isApiKeyVisible = isApiKeyVisible,
                             isSaving = isSaving,
-                            onProviderSelected = { provider ->
-                                selectedProviderName = provider.name
-                                apiKey = when (provider) {
+                            onInferenceModeSelected = { mode ->
+                                inferenceModeName = mode.name
+                            },
+                            onProviderSelected = { option ->
+                                selectedProviderId = option.id
+                                apiKey = when (option.provider) {
                                     AiProvider.GEMINI -> userPrefsState?.geminiApiKey.orEmpty()
                                     AiProvider.OPENAI -> userPrefsState?.openaiApiKey.orEmpty()
+                                    AiProvider.GROQ -> userPrefsState?.groqApiKey.orEmpty()
+                                }
+                                selectedTranscriptionModel = null
+                                selectedSummaryModel = null
+                                settingsViewModel.clearModelDiscovery()
+                            },
+                            onLocalModelSelected = { modelId ->
+                                selectedLocalModelId = modelId
+                            },
+                            onLocalModelDownload = settingsViewModel::downloadLocalModel,
+                            onLocalModelPause = settingsViewModel::pauseLocalModel,
+                            onLocalModelCancel = settingsViewModel::cancelLocalModel,
+                            onLocalModelDelete = { modelId ->
+                                if (selectedLocalModelId == modelId) {
+                                    selectedLocalModelId = null
+                                }
+                                settingsViewModel.deleteLocalModel(modelId)
+                            },
+                            onApiKeyChanged = {
+                                apiKey = it
+                                settingsViewModel.clearSecureStorageError()
+                                selectedTranscriptionModel = null
+                                selectedSummaryModel = null
+                                settingsViewModel.clearModelDiscovery()
+                            },
+                            onCheckApiKey = {
+                                CloudProviderCatalog.findById(selectedProviderId)?.provider?.let {
+                                    settingsViewModel.validateProviderKey(it, apiKey)
                                 }
                             },
-                            onApiKeyChanged = { apiKey = it },
+                            onTranscriptionModelSelected = {
+                                selectedTranscriptionModel = it.id
+                            },
+                            onSummaryModelSelected = {
+                                selectedSummaryModel = it.id
+                            },
                             onApiKeyVisibilityToggle = { isApiKeyVisible = !isApiKeyVisible },
                             onGetStartedClick = {
-                                if (apiKey.isNotBlank()) {
-                                    keyboardController?.hide()
-                                    settingsViewModel.completeSetup(selectedProvider, apiKey.trim())
+                                when (inferenceMode) {
+                                    InferenceMode.CLOUD -> {
+                                        val provider = CloudProviderCatalog
+                                            .findById(selectedProviderId)
+                                            ?.provider
+                                        if (
+                                            provider != null &&
+                                            apiKey.isNotBlank() &&
+                                            selectedTranscriptionModel != null &&
+                                            selectedSummaryModel != null
+                                        ) {
+                                            keyboardController?.hide()
+                                            settingsViewModel.completeCloudSetup(
+                                                provider,
+                                                apiKey.trim(),
+                                                selectedTranscriptionModel!!,
+                                                selectedSummaryModel!!
+                                            )
+                                        }
+                                    }
+                                    InferenceMode.LOCAL -> {
+                                        if (selectedLocalModelId != null) {
+                                            keyboardController?.hide()
+                                            settingsViewModel.completeLocalSetup(selectedLocalModelId)
+                                        }
+                                    }
                                 }
                             },
                             onSkipClick = {
@@ -109,11 +236,8 @@ class MainActivity : AppCompatActivity() {
                                 settingsViewModel.completeOnboarding()
                             },
                             onFindApiKeyClick = {
-                                val url = when (selectedProvider) {
-                                    AiProvider.GEMINI -> "https://aistudio.google.com/app/apikey"
-                                    AiProvider.OPENAI -> "https://platform.openai.com/api-keys"
-                                }
-                                uriHandler.openUri(url)
+                                CloudProviderCatalog.findById(selectedProviderId)?.apiKeyUrl
+                                    ?.let { uriHandler.openUri(it) }
                             }
                         )
                     } else {
@@ -121,29 +245,29 @@ class MainActivity : AppCompatActivity() {
                         navController = navController,
                         startDestination = Screen.NotesList.route,
                         modifier = Modifier.background(MaterialTheme.colorScheme.background),
-                        // Анимации перехода без fade (убирает белую вспышку)
+                        // Emphasized slide (no fade) — avoids white flash between screens
                         enterTransition = {
                             slideIntoContainer(
                                 towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(300)
+                                animationSpec = VoiceNotesMotion.navTween()
                             )
                         },
                         exitTransition = {
                             slideOutOfContainer(
                                 towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = tween(300)
+                                animationSpec = VoiceNotesMotion.navTween()
                             )
                         },
                         popEnterTransition = {
                             slideIntoContainer(
                                 towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(300)
+                                animationSpec = VoiceNotesMotion.navTween()
                             )
                         },
                         popExitTransition = {
                             slideOutOfContainer(
                                 towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = tween(300)
+                                animationSpec = VoiceNotesMotion.navTween()
                             )
                         }
                     ) {
@@ -151,7 +275,7 @@ class MainActivity : AppCompatActivity() {
                         composable(Screen.NotesList.route) {
                             NotesListScreen(
                                 viewModel = notesViewModel,
-                                cacheDir = cacheDir,
+                                recordingsDir = recordingsDir,
                                 onNoteClick = { noteId ->
                                     navController.navigate(Screen.NoteDetails.createRoute(noteId))
                                 },

@@ -1,38 +1,90 @@
 package com.example.voicenotes.ai
 
+import java.io.File
+
 /**
  * Enum провайдеров AI.
  */
 enum class AiProvider {
     GEMINI,
-    OPENAI
+    OPENAI,
+    GROQ
 }
 
 /**
- * Унифицированный ответ от AI сервиса.
+ * Возможности провайдера, которые используются UI и orchestration-слоем.
  */
-data class AiResponse(
+data class AiCapabilities(
+    val supportsAudio: Boolean,
+    val supportsSummarize: Boolean
+)
+
+/**
+ * Модель, реально доступная для введённого API ключа.
+ */
+data class AiModel(
+    val id: String,
+    val displayName: String = id
+)
+
+data class AvailableAiModels(
+    val transcription: List<AiModel>,
+    val summarization: List<AiModel>
+)
+
+/**
+ * Входное аудио. Провайдер сам решает, как отправить файл: inline Base64 или multipart.
+ */
+data class AudioInput(val file: File)
+
+/**
+ * Результат текстового этапа.
+ */
+data class AiSummary(
     val title: String,
-    val summary: String,
-    val rawText: String
+    val summary: String
 )
 
 /**
  * Интерфейс AI сервиса (Strategy Pattern).
- * Позволяет абстрагироваться от конкретного провайдера.
+ * Retrofit-детали остаются внутри реализации провайдера.
  */
 interface AiService {
-    /**
-     * Анализирует аудио файл и возвращает транскрипцию, заголовок и саммари.
-     * @param audioBase64 Аудио файл в формате Base64
-     * @param mimeType MIME тип аудио (например, "audio/mp4")
-     * @return Результат анализа с заголовком, саммари и транскрипцией
-     */
-    suspend fun analyzeAudio(audioBase64: String, mimeType: String): AiResponse
+    val provider: AiProvider
+    val capabilities: AiCapabilities
+
+    suspend fun getAvailableModels(apiKey: String): AvailableAiModels
+
+    suspend fun transcribe(
+        audio: AudioInput,
+        apiKey: String,
+        modelId: String
+    ): String
+
+    suspend fun summarize(
+        text: String,
+        apiKey: String,
+        modelId: String
+    ): AiSummary
 }
 
 /**
  * Исключение при отсутствии API ключа.
  */
-class MissingApiKeyException(provider: AiProvider) : 
+class MissingApiKeyException(val provider: AiProvider) :
     Exception("API key for ${provider.name} is not configured")
+
+/**
+ * Ошибка ответа AI API с кодом/сообщением для ErrorHandler.
+ */
+class AiApiException(
+    message: String,
+    val code: Int? = null,
+    val provider: AiProvider? = null,
+    cause: Throwable? = null
+) : Exception(message, cause)
+
+/**
+ * Выбранная модель или провайдер не поддерживает требуемый этап.
+ */
+class ProviderMisconfiguredException(message: String) : Exception(message)

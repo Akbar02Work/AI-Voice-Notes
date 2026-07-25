@@ -1,44 +1,16 @@
 package com.example.voicenotes.util
 
-import android.content.Context
 import android.util.Log
 import java.io.File
-import java.util.concurrent.TimeUnit
 
 /**
- * Менеджер для управления кэшем аудиофайлов.
- * Отвечает за очистку старых файлов и удаление файлов при удалении заметок.
+ * Deletes a recording only when its note is explicitly deleted.
+ *
+ * Recordings live in the app's persistent files directory. They are not cache entries and must
+ * not be removed by an age-based cleanup while the corresponding Room row still exists.
  */
 object AudioCacheManager {
     private const val TAG = "AudioCacheManager"
-    private const val KEEP_FILES_DAYS = 30L // Хранить файлы 30 дней (пример)
-
-    /**
-     * Очищает файлы в директории кэша, которые старше [KEEP_FILES_DAYS] дней.
-     * Эту функцию стоит вызывать периодически (например, при старте приложения или в Worker).
-     */
-    fun cleanOldFiles(context: Context) {
-        val cacheDir = context.cacheDir
-        val files = cacheDir.listFiles() ?: return
-        val currentTime = System.currentTimeMillis()
-        val expiryTime = TimeUnit.DAYS.toMillis(KEEP_FILES_DAYS)
-
-        var deletedCount = 0
-        files.forEach { file ->
-            // Проверяем, что это аудио файл (начинается с "audio_") и он старый
-            if (file.name.startsWith("audio_") && file.isFile) {
-                val diff = currentTime - file.lastModified()
-                if (diff > expiryTime) {
-                    if (file.delete()) {
-                        deletedCount++
-                    }
-                }
-            }
-        }
-        if (deletedCount > 0) {
-            Log.d(TAG, "Cleaned up $deletedCount old audio files")
-        }
-    }
 
     /**
      * Удаляет конкретный аудиофайл по пути.

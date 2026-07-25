@@ -6,15 +6,19 @@ import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.example.voicenotes.ai.AiProvider
+import com.example.voicenotes.ai.InferenceMode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,8 +33,20 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 data class UserPreferences(
     val geminiApiKey: String = "",
     val openaiApiKey: String = "",
+    val groqApiKey: String = "",
     val selectedProvider: AiProvider = AiProvider.GEMINI,
+    val selectedTranscriptionModel: String? = null,
+    val selectedSummaryModel: String? = null,
+    val inferenceMode: InferenceMode = InferenceMode.CLOUD,
+    val selectedLocalModelId: String? = null,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val useDynamicColor: Boolean = true,
     val isOnboardingCompleted: Boolean = false
+)
+
+class SecureStorageUnavailableException(cause: Throwable? = null) : Exception(
+    "Secure storage is unavailable. The API key was not saved.",
+    cause
 )
 
 /**
@@ -48,10 +64,18 @@ class UserPreferencesRepository @Inject constructor(
         private const val ENCRYPTED_PREFS_NAME = "secure_api_keys"
         private const val KEY_GEMINI_API = "gemini_api_key"
         private const val KEY_OPENAI_API = "openai_api_key"
+        private const val KEY_GROQ_API = "groq_api_key"
     }
     
     private object PreferencesKeys {
         val SELECTED_PROVIDER = stringPreferencesKey("selected_provider")
+        val SELECTED_TRANSCRIPTION_MODEL = stringPreferencesKey("selected_transcription_model")
+        val SELECTED_SUMMARY_MODEL = stringPreferencesKey("selected_summary_model")
+        val API_KEYS_REVISION = longPreferencesKey("api_keys_revision")
+        val INFERENCE_MODE = stringPreferencesKey("inference_mode")
+        val SELECTED_LOCAL_MODEL_ID = stringPreferencesKey("selected_local_model_id")
+        val THEME_MODE = stringPreferencesKey("theme_mode")
+        val USE_DYNAMIC_COLOR = androidx.datastore.preferences.core.booleanPreferencesKey("use_dynamic_color")
         val IS_ONBOARDING_COMPLETED = androidx.datastore.preferences.core.booleanPreferencesKey("is_onboarding_completed")
         // Миграционные ключи (для переноса старых ключей в зашифрованное хранилище)
         val LEGACY_GEMINI_API_KEY = stringPreferencesKey("gemini_api_key")
@@ -61,8 +85,8 @@ class UserPreferencesRepository @Inject constructor(
     /**
      * EncryptedSharedPreferences для безопасного хранения API ключей.
      */
-    private val encryptedPrefs: SharedPreferences by lazy {
-        try {
+    private val encryptedPrefsResult: Result<SharedPreferences> by lazy {
+        runCatching {
             val masterKey = MasterKey.Builder(context)
                 .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
                 .build()
@@ -74,10 +98,8 @@ class UserPreferencesRepository @Inject constructor(
                 EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to create EncryptedSharedPreferences, falling back to regular prefs", e)
-            // Fallback на обычные SharedPreferences (не должно случаться в проде)
-            context.getSharedPreferences(ENCRYPTED_PREFS_NAME, Context.MODE_PRIVATE)
+        }.onFailure { error ->
+            Log.e(TAG, "Secure API-key storage is unavailable", error)
         }
     }
     
@@ -89,11 +111,30 @@ class UserPreferencesRepository @Inject constructor(
         UserPreferences(
             geminiApiKey = getGeminiApiKey(),
             openaiApiKey = getOpenAiApiKey(),
+            groqApiKey = getGroqApiKey(),
             selectedProvider = try {
                 AiProvider.valueOf(preferences[PreferencesKeys.SELECTED_PROVIDER] ?: AiProvider.GEMINI.name)
             } catch (e: Exception) {
                 AiProvider.GEMINI
             },
+            selectedTranscriptionModel = preferences[PreferencesKeys.SELECTED_TRANSCRIPTION_MODEL],
+            selectedSummaryModel = preferences[PreferencesKeys.SELECTED_SUMMARY_MODEL],
+            inferenceMode = try {
+                InferenceMode.valueOf(
+                    preferences[PreferencesKeys.INFERENCE_MODE] ?: InferenceMode.CLOUD.name
+                )
+            } catch (e: Exception) {
+                InferenceMode.CLOUD
+            },
+            selectedLocalModelId = preferences[PreferencesKeys.SELECTED_LOCAL_MODEL_ID],
+            themeMode = try {
+                ThemeMode.valueOf(
+                    preferences[PreferencesKeys.THEME_MODE] ?: ThemeMode.SYSTEM.name
+                )
+            } catch (e: Exception) {
+                ThemeMode.SYSTEM
+            },
+            useDynamicColor = preferences[PreferencesKeys.USE_DYNAMIC_COLOR] ?: true,
             isOnboardingCompleted = preferences[PreferencesKeys.IS_ONBOARDING_COMPLETED] ?: false
         )
     }
@@ -147,32 +188,39 @@ class UserPreferencesRepository @Inject constructor(
      * Получить Gemini API ключ из зашифрованного хранилища.
      */
     private fun getGeminiApiKey(): String {
-        return encryptedPrefs.getString(KEY_GEMINI_API, "") ?: ""
+        return readApiKey(KEY_GEMINI_API)
     }
     
     /**
      * Получить OpenAI API ключ из зашифрованного хранилища.
      */
     private fun getOpenAiApiKey(): String {
-        return encryptedPrefs.getString(KEY_OPENAI_API, "") ?: ""
+        return readApiKey(KEY_OPENAI_API)
+    }
+
+    private fun getGroqApiKey(): String {
+        return readApiKey(KEY_GROQ_API)
     }
     
     /**
      * Сохранить Gemini API ключ в зашифрованное хранилище.
      */
     suspend fun setGeminiApiKey(key: String) {
-        encryptedPrefs.edit().putString(KEY_GEMINI_API, key).apply()
-        // Триггерим обновление Flow через DataStore
-        context.dataStore.edit { /* trigger reemission */ }
+        withContext(Dispatchers.IO) { writeApiKey(KEY_GEMINI_API, key) }
+        bumpApiKeysRevision()
     }
     
     /**
      * Сохранить OpenAI API ключ в зашифрованное хранилище.
      */
     suspend fun setOpenAiApiKey(key: String) {
-        encryptedPrefs.edit().putString(KEY_OPENAI_API, key).apply()
-        // Триггерим обновление Flow через DataStore
-        context.dataStore.edit { /* trigger reemission */ }
+        withContext(Dispatchers.IO) { writeApiKey(KEY_OPENAI_API, key) }
+        bumpApiKeysRevision()
+    }
+
+    suspend fun setGroqApiKey(key: String) {
+        withContext(Dispatchers.IO) { writeApiKey(KEY_GROQ_API, key) }
+        bumpApiKeysRevision()
     }
     
     /**
@@ -181,6 +229,49 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSelectedProvider(provider: AiProvider) {
         context.dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_PROVIDER] = provider.name
+            preferences.remove(PreferencesKeys.SELECTED_TRANSCRIPTION_MODEL)
+            preferences.remove(PreferencesKeys.SELECTED_SUMMARY_MODEL)
+        }
+    }
+
+    suspend fun setSelectedModels(transcriptionModel: String, summaryModel: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.SELECTED_TRANSCRIPTION_MODEL] = transcriptionModel
+            preferences[PreferencesKeys.SELECTED_SUMMARY_MODEL] = summaryModel
+        }
+    }
+
+    /**
+     * Cloud API vs on-device models.
+     */
+    suspend fun setInferenceMode(mode: InferenceMode) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.INFERENCE_MODE] = mode.name
+        }
+    }
+
+    /**
+     * Selected local model id from [com.example.voicenotes.ai.LocalModelCatalog].
+     */
+    suspend fun setSelectedLocalModelId(modelId: String?) {
+        context.dataStore.edit { preferences ->
+            if (modelId.isNullOrBlank()) {
+                preferences.remove(PreferencesKeys.SELECTED_LOCAL_MODEL_ID)
+            } else {
+                preferences[PreferencesKeys.SELECTED_LOCAL_MODEL_ID] = modelId
+            }
+        }
+    }
+
+    suspend fun setThemeMode(mode: ThemeMode) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.THEME_MODE] = mode.name
+        }
+    }
+
+    suspend fun setUseDynamicColor(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.USE_DYNAMIC_COLOR] = enabled
         }
     }
 
@@ -201,6 +292,46 @@ class UserPreferencesRepository @Inject constructor(
         return when (prefs.selectedProvider) {
             AiProvider.GEMINI -> prefs.geminiApiKey
             AiProvider.OPENAI -> prefs.openaiApiKey
+            AiProvider.GROQ -> prefs.groqApiKey
+        }
+    }
+
+    private suspend fun bumpApiKeysRevision() {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.API_KEYS_REVISION] =
+                (preferences[PreferencesKeys.API_KEYS_REVISION] ?: 0L) + 1L
+        }
+    }
+
+    private fun readApiKey(key: String): String {
+        val encryptedPrefs = encryptedPrefsResult.getOrNull() ?: return ""
+        return try {
+            encryptedPrefs.getString(key, "") ?: ""
+        } catch (error: Exception) {
+            Log.e(TAG, "Unable to read an encrypted API key", error)
+            ""
+        }
+    }
+
+    private fun writeApiKey(key: String, value: String) {
+        val encryptedPrefs = encryptedPrefsResult.getOrElse { error ->
+            throw SecureStorageUnavailableException(error)
+        }
+        try {
+            if (!encryptedPrefs.edit().putString(key, value).commit()) {
+                throw SecureStorageUnavailableException()
+            }
+        } catch (error: SecureStorageUnavailableException) {
+            throw error
+        } catch (error: Exception) {
+            throw SecureStorageUnavailableException(error)
         }
     }
 }
+
+fun UserPreferences.apiKeyFor(provider: AiProvider): String =
+    when (provider) {
+        AiProvider.GEMINI -> geminiApiKey
+        AiProvider.OPENAI -> openaiApiKey
+        AiProvider.GROQ -> groqApiKey
+    }

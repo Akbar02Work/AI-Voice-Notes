@@ -1,10 +1,16 @@
 package com.example.voicenotes.util
 
+import com.example.voicenotes.ai.AiApiException
 import com.example.voicenotes.ai.AiProvider
 import com.example.voicenotes.ai.MissingApiKeyException
+import com.example.voicenotes.ai.ProviderMisconfiguredException
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import retrofit2.HttpException
+import retrofit2.Response
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -44,31 +50,28 @@ class ErrorHandlerTest {
     }
 
     @Test
-    fun `fromException returns ApiUnauthorized for 401 error`() {
-        val exception = RuntimeException("HTTP 401 Unauthorized")
-        val result = ErrorHandler.fromException(exception)
+    fun `fromException returns ApiUnauthorized for HttpException 401`() {
+        val result = ErrorHandler.fromException(httpException(401))
         assertTrue(result is AppError.ApiUnauthorized)
     }
 
     @Test
-    fun `fromException returns ApiRateLimit for 429 error`() {
-        val exception = RuntimeException("HTTP 429 Too Many Requests")
-        val result = ErrorHandler.fromException(exception)
+    fun `fromException returns ApiRateLimit for HttpException 429`() {
+        val result = ErrorHandler.fromException(httpException(429))
         assertTrue(result is AppError.ApiRateLimit)
     }
 
     @Test
-    fun `fromException returns ApiServerError for 500 error`() {
-        val exception = RuntimeException("HTTP 500 Internal Server Error")
-        val result = ErrorHandler.fromException(exception)
+    fun `fromException returns ApiServerError for HttpException 500`() {
+        val result = ErrorHandler.fromException(httpException(500))
         assertTrue(result is AppError.ApiServerError)
     }
 
     @Test
-    fun `fromException returns ApiServerError for 503 error`() {
-        val exception = RuntimeException("HTTP 503 Service Unavailable")
+    fun `fromException returns ApiUnauthorized for 401 error message`() {
+        val exception = RuntimeException("HTTP 401 Unauthorized")
         val result = ErrorHandler.fromException(exception)
-        assertTrue(result is AppError.ApiServerError)
+        assertTrue(result is AppError.ApiUnauthorized)
     }
 
     @Test
@@ -88,6 +91,33 @@ class ErrorHandlerTest {
     }
 
     @Test
+    fun `fromException returns ProviderMisconfigured`() {
+        val result = ErrorHandler.fromException(
+            ProviderMisconfiguredException("Provider is not configured")
+        )
+        assertTrue(result is AppError.ProviderMisconfigured)
+        assertEquals(
+            "Provider is not configured",
+            (result as AppError.ProviderMisconfigured).message
+        )
+    }
+
+    @Test
+    fun `fromException maps AiApiException code to unauthorized`() {
+        val result = ErrorHandler.fromException(
+            AiApiException(message = "bad key", code = 401, provider = AiProvider.GEMINI)
+        )
+        assertTrue(result is AppError.ApiUnauthorized)
+    }
+
+    @Test
+    fun `fromException unwraps nested HttpException cause`() {
+        val wrapped = RuntimeException("wrapper", httpException(429))
+        val result = ErrorHandler.fromException(wrapped)
+        assertTrue(result is AppError.ApiRateLimit)
+    }
+
+    @Test
     fun `fromException returns Unknown for generic exception`() {
         val exception = IllegalArgumentException("Something went wrong")
         val result = ErrorHandler.fromException(exception)
@@ -100,5 +130,11 @@ class ErrorHandlerTest {
         val exception = NullPointerException()
         val result = ErrorHandler.fromException(exception)
         assertTrue(result is AppError.Unknown)
+    }
+
+    private fun httpException(code: Int): HttpException {
+        val body = """{"error":{"message":"fail"}}"""
+            .toResponseBody("application/json".toMediaType())
+        return HttpException(Response.error<Unit>(code, body))
     }
 }

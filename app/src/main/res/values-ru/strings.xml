@@ -2,6 +2,9 @@
 <resources>
     <!-- App -->
     <string name="app_name">Голосовые заметки</string>
+    <string name="date_today_format">Сегодня, %1$s</string>
+    <string name="date_yesterday_format">Вчера, %1$s</string>
+    <string name="settings_secure_storage_error">Защищённое хранилище недоступно. API-ключ не был сохранён.</string>
     
     <!-- Notes List Screen -->
     <string name="notes_list_title">Мои заметки</string>
@@ -11,6 +14,8 @@
     <string name="notes_list_fab_stop">Стоп</string>
     <string name="notes_list_processing">Обрабатываю запись…</string>
     <string name="notes_list_delete">Удалить</string>
+    <string name="notes_list_pin">Закрепить</string>
+    <string name="notes_list_unpin">Открепить</string>
     
     <!-- Note Status -->
     <string name="note_status_processing">Обработка...</string>
@@ -23,6 +28,8 @@
     <string name="note_details_summary">Саммари</string>
     <string name="note_details_back">Назад</string>
     <string name="note_details_edit">Редактировать</string>
+    <string name="note_details_content_pending">Пока недоступно</string>
+    <string name="note_details_not_found">Заметка не найдена</string>
     
     <!-- Edit Title Dialog -->
     <string name="edit_title_dialog_title">Изменить заголовок</string>
@@ -37,12 +44,36 @@
     <string name="settings_provider_title">Провайдер</string>
     <string name="settings_provider_gemini">Google Gemini</string>
     <string name="settings_provider_openai">OpenAI (GPT-4o-mini)</string>
+    <string name="settings_provider_groq">Groq</string>
     <string name="settings_api_key_gemini">Gemini API Ключ</string>
     <string name="settings_api_key_openai">OpenAI API Ключ</string>
+    <string name="settings_api_key_groq">Groq API Ключ</string>
     <string name="settings_api_key_not_set">Не настроен</string>
+    <string name="settings_transcription_model">Модель транскрипции</string>
+    <string name="settings_summary_model">Модель заголовка и саммари</string>
+    <string name="settings_models_not_loaded">Сохраните действующий API ключ, чтобы загрузить модели</string>
+    <string name="settings_models_loading">Проверяю ключ и загружаю модели…</string>
+    <string name="settings_models_error">Не удалось загрузить модели: %1$s</string>
     <string name="settings_language_title">Язык</string>
+    <string name="settings_language_system">Как в системе</string>
     <string name="settings_language_english">English</string>
     <string name="settings_language_russian">Русский</string>
+    <string name="settings_section_models">Модели</string>
+    <string name="settings_section_offline_models">Офлайн-модели</string>
+    <string name="settings_section_appearance">Внешний вид</string>
+    <string name="settings_section_about">О приложении</string>
+    <string name="settings_theme_title">Тема</string>
+    <string name="settings_theme_system">Системная</string>
+    <string name="settings_theme_light">Светлая</string>
+    <string name="settings_theme_dark">Тёмная</string>
+    <string name="settings_dynamic_color_title">Динамические цвета</string>
+    <string name="settings_dynamic_color_subtitle">Брать акцентные цвета из обоев</string>
+    <string name="settings_key_status_valid">Ключ проверен</string>
+    <string name="settings_key_status_checking">Проверяю…</string>
+    <string name="settings_key_status_error">Проблема с ключом</string>
+    <string name="settings_models_retry">Проверить снова</string>
+    <string name="settings_version">Версия %1$s</string>
+    <string name="settings_about_subtitle">Голосовые заметки с AI-расшифровкой</string>
     
     <!-- Errors -->
     <string name="error_no_internet">Нет подключения к интернету. Проверьте сеть.</string>
@@ -51,6 +82,9 @@
     <string name="error_api_unauthorized">Неверный API ключ. Проверьте настройки.</string>
     <string name="error_api_rate_limit">Слишком много запросов. Подождите немного.</string>
     <string name="error_api_server">AI сервис временно недоступен. Попробуйте позже.</string>
+    <string name="error_local_mode_not_ready">Выбранная офлайн-модель не установлена. Скачайте и выберите её в Настройках.</string>
+    <string name="error_provider_misconfigured">Настройка провайдера неполная. Проверьте API ключи в Настройках.</string>
+    <string name="error_audio_file_missing">Аудиофайл не найден. Запишите заметку заново.</string>
     <string name="error_recording_start">Не удалось начать запись</string>
     <string name="error_recording_stop">Не удалось остановить запись</string>
     <string name="error_recording_permission">Требуется разрешение на микрофон</string>
@@ -62,30 +96,70 @@
     <string name="common_cancel">Отмена</string>
     <string name="common_save">Сохранить</string>
     <string name="common_delete">Удалить</string>
-    
-    <!-- Onboarding -->
-    <string name="onboarding_welcome_title">Добро пожаловать</string>
-    <string name="onboarding_welcome_description">Записывайте мысли с помощью ИИ.\nЗапись, транскрипция и саммари — мгновенно.</string>
-    <string name="onboarding_how_title">Как это работает</string>
-    <string name="onboarding_how_description">1. Нажмите запись.\n2. Говорите.\n3. Получите текст и саммари от ИИ.</string>
-    <string name="onboarding_api_title">Настройка ИИ</string>
-    <string name="onboarding_api_description">Для работы нужен API ключ Google Gemini или OpenAI.\nКлюч хранится безопасно на устройстве.</string>
-    <string name="onboarding_skip">Пропустить</string>
-    <string name="onboarding_finish">Начать</string>
-    <string name="onboarding_next">Далее</string>
-    <string name="onboarding_configure">Настроить API Ключ</string>
 
     <!-- Setup Screen -->
-    <string name="setup_title">Настройка API ключа</string>
-    <string name="setup_subtitle">Выберите AI провайдера и вставьте API ключ, чтобы начать.</string>
+    <string name="setup_title">Как обрабатывать заметки</string>
+    <string name="setup_subtitle">Подключите облачный API или обрабатывайте записи приватно на устройстве.</string>
+    <string name="setup_mode_cloud">Облако</string>
+    <string name="setup_mode_local">На устройстве</string>
     <string name="setup_select_provider">Выберите провайдера</string>
+    <string name="setup_select_local_model">Выберите локальную модель</string>
+    <string name="setup_local_download_unavailable">Офлайн-транскрипция не покидает устройство. Заголовок и саммари извлекаются из исходного текста и не добавляют новых фактов.</string>
+    <string name="setup_local_download">Скачать</string>
     <string name="setup_provider_gemini">Gemini</string>
+    <string name="setup_provider_gemini_subtitle">Google AI Studio · аудио и текст</string>
     <string name="setup_provider_openai">OpenAI</string>
+    <string name="setup_provider_openai_subtitle">Модели GPT · ключ на устройстве</string>
+    <string name="setup_provider_groq">Groq</string>
+    <string name="setup_provider_groq_subtitle">Быстрая транскрипция Whisper и саммари через LLM</string>
+    <string name="setup_badge_soon">Скоро</string>
     <string name="setup_api_key_placeholder">Введите API ключ</string>
     <string name="setup_stored_securely">Ключ хранится безопасно на устройстве</string>
+    <string name="setup_check_key">Проверить ключ и загрузить модели</string>
+    <string name="setup_key_valid">Ключ работает. Выберите модели ниже.</string>
+    <string name="setup_model_error">Не удалось загрузить модели: %1$s</string>
+    <string name="setup_select_transcription_model">Модель транскрипции</string>
+    <string name="setup_select_summary_model">Модель заголовка и саммари</string>
     <string name="setup_find_api_key">Где найти API ключ?</string>
     <string name="setup_get_started">Начать</string>
+    <string name="setup_continue_local">Продолжить</string>
     <string name="setup_skip">Пропустить</string>
+
+    <!-- Offline models -->
+    <string name="local_model_lite_ru_name">Lite RU</string>
+    <string name="local_model_lite_ru_desc">Маленький Zipformer. Для быстрых заметок и телефонов с 4 ГБ.</string>
+    <string name="local_model_standard_ru_name">Standard RU</string>
+    <string name="local_model_standard_ru_desc">Более крупный offline Zipformer с лучшей точностью русского.</string>
+    <string name="local_model_speed_fastest">Скорость: максимальная</string>
+    <string name="local_model_speed_fast">Скорость: высокая</string>
+    <string name="local_model_quality_good">Качество: хорошее</string>
+    <string name="local_model_quality_best">Качество: лучшее из двух</string>
+    <string name="local_model_ram">Android 10+ · RAM: минимум %1$d ГБ</string>
+    <string name="local_model_incompatible">Недоступно на этом устройстве: нужны Android 10+ и %1$d ГБ RAM.</string>
+    <string name="local_model_sizes">Загрузка %1$s · после установки %2$s</string>
+    <string name="local_model_download">Скачать</string>
+    <string name="local_model_resume">Продолжить</string>
+    <string name="local_model_pause">Пауза</string>
+    <string name="local_model_cancel">Отмена</string>
+    <string name="local_model_delete">Удалить</string>
+    <string name="local_model_use">Выбрать</string>
+    <string name="local_model_active">Активна</string>
+    <string name="local_model_installed">Установлена</string>
+    <string name="local_model_queued">Ожидание сети…</string>
+    <string name="local_model_downloading">Загрузка: %1$d%%</string>
+    <string name="local_model_verifying">Проверка контрольных сумм…</string>
+    <string name="local_model_paused">Пауза на %1$d%%</string>
+    <string name="local_model_failed">Ошибка загрузки: %1$s</string>
+    <string name="local_model_hf_page">Страница модели</string>
+    <string name="local_models_more_hf">Другие совместимые модели на Hugging Face</string>
+    <string name="local_models_more_hf_note">Остальные модели пока доступны только как каталог: произвольная установка выключена, потому что для каждой архитектуры нужно проверить файлы и конфигурацию runtime.</string>
+    <string name="local_download_channel_name">Загрузка офлайн-моделей</string>
+    <string name="local_download_notification_title">Загрузка офлайн-модели речи</string>
+    <string name="local_download_notification_progress">%1$s · %2$d%%</string>
+    <string name="local_download_verifying">Проверка и установка модели…</string>
+    <string name="settings_inference_mode">Режим обработки</string>
+    <string name="settings_inference_cloud">Облачный API</string>
+    <string name="settings_inference_local">На устройстве</string>
     
     <!-- Accessibility Content Descriptions -->
     <string name="cd_notes_list_fab_recording">Идет запись. Нажмите, чтобы остановить.</string>
@@ -94,6 +168,8 @@
     <string name="cd_note_pause">Пауза</string>
     <string name="cd_note_seek_bar">Перемотка аудио</string>
     <string name="cd_delete_note">Удалить заметку</string>
+    <string name="cd_pin_note">Закрепить заметку</string>
+    <string name="cd_unpin_note">Открепить заметку</string>
     <string name="cd_retry_processing">Повторить обработку</string>
     <string name="cd_settings_button">Настройки</string>
     <string name="cd_back_button">Назад</string>

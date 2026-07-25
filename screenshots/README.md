@@ -1,19 +1,11 @@
-# Screenshots Directory
+# Screenshot set
 
-This directory contains screenshots for the README.
+The repository uses five real-device screenshots:
 
-## How to add screenshots
+- `setup-cloud.jpg` — cloud provider selection
+- `setup-offline.jpg` — on-device model selection
+- `notes-list.jpg` — notes list and processing state
+- `note-details.jpg` — transcription, summary, and audio playback
+- `settings.jpg` — appearance and language settings
 
-1. Take screenshots on your device/emulator
-2. Save them as:
-   - `notes_list.png` — Main notes list screen
-   - `note_details.png` — Note details with audio player
-   - `settings.png` — Settings screen
-   - `onboarding.png` — Onboarding welcome screen
-
-3. Recommended size: 1080x1920 (or similar portrait ratio)
-
-## Tips
-
-- Use Android Studio's built-in screenshot tool
-- Or run: `adb shell screencap -p /sdcard/screenshot.png && adb pull /sdcard/screenshot.png`
+Keep future replacements at the same names so README links remain stable.

@@ -15,5 +15,6 @@ data class NoteEntity(
     val summary: String,            // Саммари от AI (2-3 предложения)
     val audioPath: String,          // Путь к аудио файлу
     val status: NoteStatus = NoteStatus.SYNCED, // Статус синхронизации
+    val isPinned: Boolean = false,
     val timestamp: Long = System.currentTimeMillis()
 )

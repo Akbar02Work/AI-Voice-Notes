@@ -1,41 +1,43 @@
 package com.example.voicenotes.util
 
+import android.content.Context
+import com.example.voicenotes.R
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Locale
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
- * Форматирует timestamp в человеческую дату.
- * 
- * Примеры:
- * - "Сегодня, 14:30"
- * - "Вчера, 10:15"
- * - "9 янв, 16:00"
- * - "15 дек 2025, 09:30"
+ * Formats note timestamps using the active application locale.
  */
-object DateFormatter {
-    
-    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale("ru"))
-    private val dayMonthFormatter = DateTimeFormatter.ofPattern("d MMM", Locale("ru"))
-    private val fullFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", Locale("ru"))
-    
+@Singleton
+class DateFormatter @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     fun formatTimestamp(timestamp: Long): String {
-        val instant = Instant.ofEpochMilli(timestamp)
-        val dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
+        val locale = currentLocale()
+        val timeFormatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+            .withLocale(locale)
+        val dayMonthFormatter = DateTimeFormatter.ofPattern("d MMM", locale)
+        val fullFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", locale)
+        val dateTime = LocalDateTime.ofInstant(
+            Instant.ofEpochMilli(timestamp),
+            ZoneId.systemDefault()
+        )
         val date = dateTime.toLocalDate()
         val today = LocalDate.now()
-        val yesterday = today.minusDays(1)
-        
         val time = dateTime.format(timeFormatter)
-        
+
         return when (date) {
-            today -> "Сегодня, $time"
-            yesterday -> "Вчера, $time"
+            today -> context.getString(R.string.date_today_format, time)
+            today.minusDays(1) -> context.getString(R.string.date_yesterday_format, time)
             else -> {
-                // Если тот же год — не показывать год
                 if (date.year == today.year) {
                     "${dateTime.format(dayMonthFormatter)}, $time"
                 } else {
@@ -43,5 +45,10 @@ object DateFormatter {
                 }
             }
         }
+    }
+
+    private fun currentLocale(): Locale {
+        val locales = context.resources.configuration.locales
+        return if (locales.isEmpty) Locale.getDefault() else locales[0]
     }
 }

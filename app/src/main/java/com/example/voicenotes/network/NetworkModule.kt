@@ -16,11 +16,13 @@ object NetworkModule {
 
     private const val GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/"
     private const val OPENAI_BASE_URL = "https://api.openai.com/"
+    private const val GROQ_BASE_URL = "https://api.groq.com/openai/"
 
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
-        encodeDefaults = true
+        encodeDefaults = false
+        explicitNulls = false
     }
 
     /**
@@ -28,8 +30,10 @@ object NetworkModule {
      * Включается только в debug сборке для безопасности.
      */
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
+        redactHeader("Authorization")
+        redactHeader("x-goog-api-key")
         level = if (BuildConfig.DEBUG) {
-            HttpLoggingInterceptor.Level.BODY
+            HttpLoggingInterceptor.Level.BASIC
         } else {
             HttpLoggingInterceptor.Level.NONE
         }
@@ -65,6 +69,15 @@ object NetworkModule {
     val openAiApi: OpenAiApi by lazy {
         Retrofit.Builder()
             .baseUrl(OPENAI_BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+            .create(OpenAiApi::class.java)
+    }
+
+    val groqApi: OpenAiApi by lazy {
+        Retrofit.Builder()
+            .baseUrl(GROQ_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()

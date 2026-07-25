@@ -11,11 +11,15 @@ import com.example.voicenotes.util.AppError
 import com.example.voicenotes.util.AudioCacheManager
 import com.example.voicenotes.util.DateFormatter
 import com.example.voicenotes.util.ErrorHandler
+import com.example.voicenotes.util.NetworkMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -33,7 +37,8 @@ data class NoteUi(
     val summary: String,
     val formattedDate: String,
     val previewText: String,    // Краткое превью для списка
-    val status: NoteStatus      // Статус (SYNCED, DRAFT, PROCESSING, FAILED)
+    val status: NoteStatus,     // Статус (SYNCED, DRAFT, PROCESSING, FAILED)
+    val isPinned: Boolean = false
 )
 
 /**
@@ -55,7 +60,11 @@ data class NotesUiState(
  * - UI обновится автоматически без ручного добавления в список
  */
 @HiltViewModel
-class NotesViewModel @Inject constructor(private val repository: NoteRepository) : ViewModel() {
+class NotesViewModel @Inject constructor(
+    private val repository: NoteRepository,
+    private val networkMonitor: NetworkMonitor,
+    private val dateFormatter: DateFormatter
+) : ViewModel() {
 
     private var audioRecorder: AudioRecorder? = null
 
@@ -75,6 +84,23 @@ class NotesViewModel @Inject constructor(private val repository: NoteRepository)
         )
 
     private var currentRecordingFile: File? = null
+
+    init {
+        // Auto-retry DRAFT notes when connectivity returns (skip initial emission).
+        viewModelScope.launch {
+            networkMonitor.isOnline
+                .distinctUntilChanged()
+                .drop(1)
+                .filter { online -> online }
+                .collect {
+                    try {
+                        repository.retryDraftNotes()
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Auto-retry of draft notes failed", e)
+                    }
+                }
+        }
+    }
 
     /**
      * Получить заметку по ID для экрана деталей.
@@ -105,6 +131,17 @@ class NotesViewModel @Inject constructor(private val repository: NoteRepository)
         }
     }
 
+    fun togglePin(noteId: Long, currentlyPinned: Boolean) {
+        viewModelScope.launch {
+            try {
+                repository.setNotePinned(noteId, !currentlyPinned)
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to toggle pin", e)
+                _uiState.update { it.copy(error = AppError.UpdateFailed(e.message)) }
+            }
+        }
+    }
+
     /**
      * Обновить заголовок заметки.
      */
@@ -123,11 +160,14 @@ class NotesViewModel @Inject constructor(private val repository: NoteRepository)
     /**
      * Начинает запись аудио.
      */
-    fun startRecording(context: Context, cacheDir: File) {
-        val fileName = "audio_${System.currentTimeMillis()}.mp3"
-        val outputFile = File(cacheDir, fileName)
+    fun startRecording(context: Context, recordingsDir: File) {
+        val fileName = "audio_${System.currentTimeMillis()}.m4a"
         
         try {
+            check(recordingsDir.exists() || recordingsDir.mkdirs()) {
+                "Unable to create recordings directory"
+            }
+            val outputFile = File(recordingsDir, fileName)
             if (audioRecorder == null) {
                 audioRecorder = AudioRecorder(context.applicationContext)
             }
@@ -142,7 +182,7 @@ class NotesViewModel @Inject constructor(private val repository: NoteRepository)
     }
 
     /**
-     * Останавливает запись аудио и обрабатывает через Gemini API.
+     * Останавливает запись аудио и запускает AI-обработку.
      */
     fun stopRecording() {
         try {
@@ -212,9 +252,10 @@ class NotesViewModel @Inject constructor(private val repository: NoteRepository)
         title = title,
         rawText = rawText,
         summary = summary,
-        formattedDate = DateFormatter.formatTimestamp(timestamp),
+        formattedDate = dateFormatter.formatTimestamp(timestamp),
         previewText = rawText.take(100).replace("\n", " ") + if (rawText.length > 100) "..." else "",
-        status = status
+        status = status,
+        isPinned = isPinned
     )
 
     override fun onCleared() {

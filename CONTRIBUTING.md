@@ -1,12 +1,12 @@
 # Contributing to VoiceNotes
 
-Thank you for considering contributing to VoiceNotes! 🎉
+Thank you for considering contributing to VoiceNotes.
 
 ## How to Contribute
 
 ### Reporting Bugs
 
-1. Check if the bug has already been reported in [Issues](https://github.com/YOUR_USERNAME/VoiceNotes/issues)
+1. Check if the bug has already been reported in [Issues](https://github.com/Akbar02Work/VoiceNotes/issues)
 2. If not, create a new issue with:
    - Clear description of the problem
    - Steps to reproduce
@@ -62,7 +62,7 @@ Follow conventional commits:
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/VoiceNotes.git
+git clone https://github.com/Akbar02Work/VoiceNotes.git
 
 # Create feature branch
 git checkout -b feature/my-feature
@@ -71,7 +71,7 @@ git checkout -b feature/my-feature
 ./gradlew assembleDebug
 
 # Run tests
-./gradlew testDebugUnitTest
+./gradlew testDebugUnitTest lintDebug assembleDebug
 ```
 
 ## Questions?

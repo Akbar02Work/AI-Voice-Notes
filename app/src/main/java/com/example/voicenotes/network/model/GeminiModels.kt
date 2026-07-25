@@ -1,5 +1,6 @@
 package com.example.voicenotes.network.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
@@ -10,21 +11,35 @@ data class GeminiRequest(
     val contents: List<GeminiContent>
 )
 
+@Serializable
+data class GeminiModelListResponse(
+    val models: List<GeminiModelInfo> = emptyList()
+)
+
+@Serializable
+data class GeminiModelInfo(
+    val name: String,
+    val displayName: String? = null,
+    val supportedGenerationMethods: List<String> = emptyList()
+)
+
 /**
  * Контент запроса/ответа (может содержать несколько частей).
  */
 @Serializable
 data class GeminiContent(
-    val parts: List<GeminiPart>,
+    val parts: List<GeminiPart> = emptyList(),
     val role: String? = null
 )
 
 /**
  * Часть контента (текст или inline данные).
+ * Gemini REST expects snake_case field names.
  */
 @Serializable
 data class GeminiPart(
     val text: String? = null,
+    @SerialName("inline_data")
     val inlineData: InlineData? = null
 )
 
@@ -33,6 +48,7 @@ data class GeminiPart(
  */
 @Serializable
 data class InlineData(
+    @SerialName("mime_type")
     val mimeType: String,
     val data: String  // base64 encoded
 )
@@ -43,6 +59,8 @@ data class InlineData(
 @Serializable
 data class GeminiResponse(
     val candidates: List<GeminiCandidate>? = null,
+    @SerialName("promptFeedback")
+    val promptFeedback: GeminiPromptFeedback? = null,
     val error: GeminiError? = null
 )
 
@@ -51,7 +69,15 @@ data class GeminiResponse(
  */
 @Serializable
 data class GeminiCandidate(
-    val content: GeminiContent
+    val content: GeminiContent? = null,
+    @SerialName("finishReason")
+    val finishReason: String? = null
+)
+
+@Serializable
+data class GeminiPromptFeedback(
+    @SerialName("blockReason")
+    val blockReason: String? = null
 )
 
 /**
@@ -59,48 +85,7 @@ data class GeminiCandidate(
  */
 @Serializable
 data class GeminiError(
-    val code: Int,
-    val message: String,
-    val status: String
+    val code: Int? = null,
+    val message: String? = null,
+    val status: String? = null
 )
-
-/**
- * Вспомогательные функции для создания запросов.
- */
-object GeminiRequestBuilder {
-    
-    /**
-     * Создаёт запрос для транскрипции аудио.
-     * @param audioBase64 Аудио в формате base64
-     * @param mimeType MIME тип аудио (например "audio/mp3")
-     */
-    fun transcribeAudio(audioBase64: String, mimeType: String = "audio/mp3"): GeminiRequest {
-        return GeminiRequest(
-            contents = listOf(
-                GeminiContent(
-                    parts = listOf(
-                        GeminiPart(text = "Transcribe this audio to text. Return only the transcription, nothing else."),
-                        GeminiPart(inlineData = InlineData(mimeType = mimeType, data = audioBase64))
-                    )
-                )
-            )
-        )
-    }
-    
-    /**
-     * Создаёт запрос для генерации саммари текста.
-     * @param text Текст для обработки
-     * @param prompt Инструкция (по умолчанию - сделать саммари)
-     */
-    fun generateSummary(text: String, prompt: String = "Summarize this text concisely:"): GeminiRequest {
-        return GeminiRequest(
-            contents = listOf(
-                GeminiContent(
-                    parts = listOf(
-                        GeminiPart(text = "$prompt\n\n$text")
-                    )
-                )
-            )
-        )
-    }
-}

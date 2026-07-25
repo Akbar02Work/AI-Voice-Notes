@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
  * Room база данных для приложения VoiceNotes.
  * Синглтон — одно соединение на всё приложение.
  */
-@Database(entities = [NoteEntity::class], version = 3, exportSchema = false)
+@Database(entities = [NoteEntity::class], version = 4, exportSchema = false)
 @androidx.room.TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     
@@ -35,6 +35,14 @@ abstract class AppDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE notes ADD COLUMN status TEXT NOT NULL DEFAULT 'SYNCED'")
             }
         }
+
+        internal val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                database.execSQL(
+                    "ALTER TABLE notes ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
         
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -43,8 +51,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "voicenotes_db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                    .fallbackToDestructiveMigration() // При критических проблемах — пересоздать БД
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                 INSTANCE = instance
                 instance

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,19 +15,23 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -38,6 +43,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -51,15 +57,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.voicenotes.R
+import com.example.voicenotes.data.NoteStatus
+import com.example.voicenotes.ui.theme.VoiceNotesPillShape
+import com.example.voicenotes.ui.theme.spacing
 import com.example.voicenotes.util.AudioPlayerState
 import com.example.voicenotes.util.ErrorHandler
 
@@ -73,11 +81,11 @@ fun NoteDetailsScreen(
     val playerState by viewModel.audioPlayer.playerState.collectAsState()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    
+    val spacing = MaterialTheme.spacing
+
     var showEditDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Обработка ошибок
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
             snackbarHostState.showSnackbar(
@@ -87,15 +95,13 @@ fun NoteDetailsScreen(
             viewModel.clearError()
         }
     }
-    
-    // Обработка успешного удаления
+
     LaunchedEffect(uiState.isDeleted) {
         if (uiState.isDeleted) {
             onBackClick()
         }
     }
 
-    // Диалог редактирования заголовка
     if (showEditDialog) {
         var newTitle by remember { mutableStateOf(uiState.note?.title ?: "") }
         AlertDialog(
@@ -127,7 +133,6 @@ fun NoteDetailsScreen(
         )
     }
 
-    // Диалог подтверждения удаления
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -139,7 +144,7 @@ fun NoteDetailsScreen(
                         viewModel.deleteNote()
                         showDeleteDialog = false
                     },
-                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                    colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error
                     )
                 ) {
@@ -174,7 +179,10 @@ fun NoteDetailsScreen(
                 },
                 actions = {
                     if (uiState.note != null) {
-                        IconButton(onClick = { showEditDialog = true }) {
+                        IconButton(
+                            onClick = { showEditDialog = true },
+                            enabled = uiState.note?.status == NoteStatus.SYNCED
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = stringResource(R.string.note_details_edit)
@@ -196,31 +204,42 @@ fun NoteDetailsScreen(
             )
         }
     ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
+        when {
+            uiState.isLoading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
             }
-        } else {
-            val note = uiState.note
-            if (note != null) {
+            uiState.note != null -> {
+                val note = uiState.note!!
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues)
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp)
+                        .padding(spacing.medium)
                 ) {
-                    // Audio Player Card
+                    if (note.status != NoteStatus.SYNCED) {
+                        NoteDetailsStatusBanner(
+                            status = note.status,
+                            detail = note.summary.takeIf { it.isNotBlank() },
+                            onRetry = viewModel::retryNote
+                        )
+                        Spacer(modifier = Modifier.height(spacing.large))
+                    }
+
                     AudioPlayerCard(
                         playerState = playerState,
                         onPlayPause = {
                             if (playerState.isPlaying) {
                                 viewModel.audioPlayer.pause()
                             } else {
-                                if (playerState.currentPosition > 0 && playerState.currentPosition < playerState.duration) {
+                                if (playerState.currentPosition > 0 &&
+                                    playerState.currentPosition < playerState.duration
+                                ) {
                                     viewModel.audioPlayer.resume()
                                 } else {
                                     viewModel.playAudio()
@@ -231,47 +250,235 @@ fun NoteDetailsScreen(
                             viewModel.audioPlayer.seekTo(position.toInt())
                         }
                     )
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
 
-                    // Summary Section
+                    Spacer(modifier = Modifier.height(spacing.large))
+
                     Text(
                         text = stringResource(R.string.note_details_summary),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(spacing.small))
                     Card(
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.secondaryContainer
                         ),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = note.summary,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(16.dp),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
+                        when {
+                            note.status == NoteStatus.PROCESSING -> {
+                                Row(
+                                    modifier = Modifier.padding(spacing.medium),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(spacing.small)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.note_status_processing),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+                            note.status == NoteStatus.SYNCED -> {
+                                Text(
+                                    text = note.summary,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(spacing.medium),
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                            else -> {
+                                Text(
+                                    text = stringResource(R.string.note_details_content_pending),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.padding(spacing.medium),
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
                     }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Transcription Section
+
+                    Spacer(modifier = Modifier.height(spacing.large))
+
                     Text(
                         text = stringResource(R.string.note_details_transcription),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = note.rawText,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    
-                    // Footer padding
+                    Spacer(modifier = Modifier.height(spacing.small))
+                    when {
+                        note.status == NoteStatus.PROCESSING && note.rawText.isBlank() -> {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(spacing.small)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Text(
+                                    text = stringResource(R.string.notes_list_processing),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        note.rawText.isNotBlank() -> {
+                            Text(
+                                text = note.rawText,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        else -> {
+                            Text(
+                                text = stringResource(R.string.note_details_content_pending),
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.fillMaxWidth(),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(80.dp))
+                }
+            }
+            else -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.note_details_not_found),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoteDetailsStatusBanner(
+    status: NoteStatus,
+    detail: String?,
+    onRetry: () -> Unit
+) {
+    val spacing = MaterialTheme.spacing
+    val context = LocalContext.current
+
+    val container: androidx.compose.ui.graphics.Color
+    val onContainer: androidx.compose.ui.graphics.Color
+    val labelRes: Int
+    val showRetry: Boolean
+    when (status) {
+        NoteStatus.PROCESSING -> {
+            container = MaterialTheme.colorScheme.primaryContainer
+            onContainer = MaterialTheme.colorScheme.onPrimaryContainer
+            labelRes = R.string.note_status_processing
+            showRetry = false
+        }
+        NoteStatus.DRAFT -> {
+            container = MaterialTheme.colorScheme.tertiaryContainer
+            onContainer = MaterialTheme.colorScheme.onTertiaryContainer
+            labelRes = R.string.note_status_draft
+            showRetry = true
+        }
+        NoteStatus.FAILED -> {
+            container = MaterialTheme.colorScheme.errorContainer
+            onContainer = MaterialTheme.colorScheme.onErrorContainer
+            labelRes = R.string.note_status_failed
+            showRetry = true
+        }
+        NoteStatus.SYNCED -> return
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        color = container,
+        contentColor = onContainer
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(spacing.medium)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(spacing.small)
+            ) {
+                if (status == NoteStatus.PROCESSING) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = onContainer,
+                        trackColor = onContainer.copy(alpha = 0.2f)
+                    )
+                } else {
+                    Icon(
+                        imageVector = if (status == NoteStatus.DRAFT) {
+                            Icons.Default.CloudOff
+                        } else {
+                            Icons.Default.ErrorOutline
+                        },
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Text(
+                    text = stringResource(labelRes),
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            if (!detail.isNullOrBlank() && status != NoteStatus.PROCESSING) {
+                Text(
+                    text = detail,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    color = onContainer.copy(alpha = 0.85f)
+                )
+            }
+
+            if (showRetry) {
+                FilledTonalButton(
+                    onClick = onRetry,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics {
+                            contentDescription = context.getString(R.string.cd_retry_processing)
+                        },
+                    shape = VoiceNotesPillShape,
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = onContainer
+                    ),
+                    contentPadding = PaddingValues(
+                        horizontal = spacing.large,
+                        vertical = spacing.medium
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(ButtonDefaults.IconSize)
+                    )
+                    Spacer(modifier = Modifier.width(ButtonDefaults.IconSpacing))
+                    Text(
+                        text = stringResource(R.string.note_action_retry),
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
         }
@@ -295,34 +502,40 @@ fun AudioPlayerCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Play/Pause Button
                 IconButton(
                     onClick = onPlayPause,
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary),
-                    colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onPrimary)
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
                     Icon(
-                        imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                        imageVector = if (playerState.isPlaying) {
+                            Icons.Default.Pause
+                        } else {
+                            Icons.Default.PlayArrow
+                        },
                         contentDescription = stringResource(
                             if (playerState.isPlaying) R.string.cd_note_pause else R.string.cd_note_play
                         )
                     )
                 }
 
-                // Progress
                 Column(modifier = Modifier.weight(1f)) {
                     Slider(
                         value = playerState.currentPosition.toFloat(),
                         onValueChange = onSeek,
                         valueRange = 0f..(playerState.duration.toFloat().coerceAtLeast(1f)),
-                        modifier = Modifier.fillMaxWidth().semantics { 
-                            contentDescription = context.getString(R.string.cd_note_seek_bar)
-                        }
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics {
+                                contentDescription = context.getString(R.string.cd_note_seek_bar)
+                            }
                     )
-                    
+
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -340,12 +553,11 @@ fun AudioPlayerCard(
                     }
                 }
             }
-            
-            // Error message if any
+
             playerState.error?.let {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Error: ${it}", // TODO: Use ErrorHandler.getLocalizedMessage via callback or similar
+                    text = "Error: $it",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error
                 )

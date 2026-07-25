@@ -16,9 +16,12 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
     }
 
 
@@ -42,6 +45,20 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    packaging {
+        jniLibs {
+            excludes += setOf(
+                "**/libsherpa-onnx-c-api.so",
+                "**/libsherpa-onnx-cxx-api.so"
+            )
+        }
+        resources {
+            excludes += setOf(
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md"
+            )
+        }
     }
 }
 
@@ -83,6 +100,11 @@ dependencies {
     
     // DataStore
     implementation(libs.datastore.preferences)
+
+    // Reliable on-device model downloads + native ONNX inference
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.sherpa.onnx)
+    implementation(libs.commons.compress)
     
     // Security - Encrypted SharedPreferences
     implementation(libs.security.crypto)
@@ -98,10 +120,12 @@ dependencies {
     // Android Testing
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.test.core.ktx)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.mockk.android)
     androidTestImplementation(libs.hilt.testing)
+    androidTestImplementation(libs.room.testing)
     kspAndroidTest(libs.hilt.compiler)
     
     // Debug

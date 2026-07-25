@@ -29,6 +29,22 @@ data class OpenAiResponse(
 )
 
 @Serializable
+data class OpenAiModelListResponse(
+    val data: List<OpenAiModelInfo> = emptyList()
+)
+
+@Serializable
+data class OpenAiModelInfo(
+    val id: String,
+    val active: Boolean? = null
+)
+
+@Serializable
+data class OpenAiTranscriptionResponse(
+    val text: String
+)
+
+@Serializable
 data class OpenAiChoice(
     val index: Int = 0,
     val message: OpenAiMessage? = null,

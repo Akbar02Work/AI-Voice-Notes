@@ -1,73 +1,52 @@
 package com.example.voicenotes.data
 
-import android.util.Base64
-import com.example.voicenotes.ai.AiProvider
-import com.example.voicenotes.ai.AiResponse
-import com.example.voicenotes.ai.GeminiAiService
+import com.example.voicenotes.ai.AiServiceRegistry
+import com.example.voicenotes.ai.AiSummary
+import com.example.voicenotes.ai.AudioInput
+import com.example.voicenotes.ai.InferenceMode
+import com.example.voicenotes.ai.LocalAiService
 import com.example.voicenotes.ai.MissingApiKeyException
-import com.example.voicenotes.ai.OpenAiService
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Репозиторий для работы с голосовыми заметками.
  * Инкапсулирует логику взаимодействия с AI сервисами и Room базой данных.
- * 
- * Поддерживает несколько AI провайдеров (Gemini, OpenAI) с выбором в runtime.
- * 
- * Магия: когда мы сохраняем заметку через DAO, база автоматически "пнет"
- * всех подписчиков getAllNotes() через Flow — UI обновится сам!
  */
 @Singleton
 class NoteRepository @Inject constructor(
     private val noteDao: NoteDao,
-    private val geminiService: GeminiAiService,
-    private val openAiService: OpenAiService,
+    private val aiServices: AiServiceRegistry,
+    private val localAiService: LocalAiService,
     private val userPreferences: UserPreferencesRepository
 ) {
+    private val draftRetryMutex = Mutex()
 
-    /**
-     * Получить все заметки из базы данных.
-     * Возвращает Flow — UI подписывается и получает обновления автоматически.
-     */
     fun getAllNotes(): Flow<List<NoteEntity>> = noteDao.getAllNotes()
 
-    /**
-     * Получить заметку по ID.
-     */
+    fun observeNoteById(noteId: Long): Flow<NoteEntity?> = noteDao.observeNoteById(noteId)
+
     suspend fun getNoteById(noteId: Long): NoteEntity? = noteDao.getNoteById(noteId)
 
-    /**
-     * Удалить заметку по ID.
-     */
     suspend fun deleteNote(noteId: Long) = noteDao.deleteNote(noteId)
 
-    /**
-     * Обновить заголовок заметки.
-     */
-    suspend fun updateNoteTitle(noteId: Long, newTitle: String) = noteDao.updateNoteTitle(noteId, newTitle)
+    suspend fun updateNoteTitle(noteId: Long, newTitle: String) =
+        noteDao.updateNoteTitle(noteId, newTitle)
+
+    suspend fun setNotePinned(noteId: Long, isPinned: Boolean) =
+        noteDao.updatePinned(noteId, isPinned)
 
     /**
-     * Обрабатывает голосовую заметку: транскрибирует, создаёт саммари и сохраняет в базу.
-     * 
-     * Использует выбранного AI провайдера из настроек пользователя.
-     * 
-     * @param audioFile Аудио файл для обработки
-     * @throws MissingApiKeyException Если API ключ не настроен
-     * @throws Exception При ошибке API
-     */
-    /**
-     * Обрабатывает голосовую заметку: транскрибирует, создаёт саммари и сохраняет в базу.
-     * Сохраняет черновик при ошибках сети.
-     */
-    /**
-     * Обрабатывает голосовую заметку: транскрибирует, создаёт саммари и сохраняет в базу.
-     * Сохраняет черновик при ошибках сети.
+     * Создаёт PROCESSING-запись и запускает AI-обработку.
+     * При ошибке статус становится DRAFT (сеть) или FAILED (остальное),
+     * заголовок больше не остаётся "Processing...".
      */
     suspend fun processVoiceNote(audioFile: File) {
-        // 1. Создаем начальную запись в БД со статусом PROCESSING
         val tempNote = NoteEntity(
             title = "Processing...",
             rawText = "",
@@ -75,98 +54,136 @@ class NoteRepository @Inject constructor(
             audioPath = audioFile.absolutePath,
             status = NoteStatus.PROCESSING
         )
-        // Теперь insertNote возвращает ID
         val noteId = noteDao.insertNote(tempNote)
-        
-        // 2. Запускаем процессинг
-        // Обертываем в try-catch, чтобы убедиться, что исключение доходит до VM для отображения,
-        // но при этом статус в БД уже обновлен внутри processNoteById.
         processNoteById(noteId, audioFile)
     }
-    
-    /**
-     * Повторить обработку заметки.
-     */
+
     suspend fun retryNote(noteId: Long) {
         val note = noteDao.getNoteById(noteId) ?: return
         val audioFile = File(note.audioPath)
-        
+
         if (!audioFile.exists()) {
-             noteDao.updateStatus(noteId, NoteStatus.FAILED)
-             throw Exception("Audio file not found")
+            markFailed(note, "Audio file missing")
+            throw IOException("Audio file not found: ${note.audioPath}")
         }
-        
-        // Обновляем статус на процессинг
-        noteDao.updateStatus(noteId, NoteStatus.PROCESSING)
-        
-        // Пытаемся обработать
+
+        noteDao.updateNote(
+            note.copy(
+                title = "Processing...",
+                status = NoteStatus.PROCESSING,
+                summary = ""
+            )
+        )
         processNoteById(noteId, audioFile)
     }
 
     /**
-     * Внутренняя логика обработки заметки по ID.
+     * Re-processes DRAFT notes when connectivity returns (cloud mode only).
+     * Failures are absorbed per-note so one bad draft does not block the rest.
      */
+    suspend fun retryDraftNotes() = draftRetryMutex.withLock {
+        val prefs = userPreferences.getPreferences()
+        if (prefs.inferenceMode != InferenceMode.CLOUD) return@withLock
+
+        val drafts = noteDao.getNotesByStatus(NoteStatus.DRAFT)
+        for (draft in drafts) {
+            try {
+                retryNote(draft.id)
+            } catch (_: Exception) {
+                // Status already updated inside processNoteById / retryNote.
+            }
+        }
+    }
+
     private suspend fun processNoteById(noteId: Long, audioFile: File) {
-        // Получаем свежую копию заметки
         val currentNote = noteDao.getNoteById(noteId) ?: return
 
         try {
-            // 1. Получаем настройки и ключ
             val prefs = userPreferences.getPreferences()
-            val apiKey = when (prefs.selectedProvider) {
-                AiProvider.GEMINI -> prefs.geminiApiKey
-                AiProvider.OPENAI -> prefs.openaiApiKey
+
+            if (!audioFile.exists() || audioFile.length() == 0L) {
+                throw IOException("Audio file is missing or empty")
             }
-            
-            if (apiKey.isBlank()) {
-                throw MissingApiKeyException(prefs.selectedProvider)
-            }
-            
-            // 2. Читаем и анализируем
-            val audioBytes = audioFile.readBytes()
-            val audioBase64 = Base64.encodeToString(audioBytes, Base64.NO_WRAP)
-            val mimeType = getMimeType(audioFile)
-            
-            val aiResult = when (prefs.selectedProvider) {
-                AiProvider.GEMINI -> geminiService.analyzeAudio(audioBase64, mimeType, apiKey)
-                AiProvider.OPENAI -> {
-                     val geminiApiKey = prefs.geminiApiKey
-                     if (geminiApiKey.isBlank()) throw Exception("OpenAI requires Gemini API key")
-                     
-                     val transcription = geminiService.analyzeAudio(audioBase64, mimeType, geminiApiKey)
-                     openAiService.generateTitleAndSummary(transcription.rawText, apiKey)
+
+            val (transcription, summary) = when (prefs.inferenceMode) {
+                InferenceMode.LOCAL -> {
+                    val text = localAiService.transcribe(
+                        audio = AudioInput(audioFile),
+                        modelId = prefs.selectedLocalModelId
+                    )
+                    text to localAiService.summarize(text)
                 }
+                InferenceMode.CLOUD -> processWithCloud(audioFile, prefs)
             }
-            
-            // 3. Успех -> обновляем запись полностью
-            val updatedNote = currentNote.copy(
-                title = aiResult.title,
-                rawText = aiResult.rawText,
-                summary = aiResult.summary,
-                status = NoteStatus.SYNCED
+
+            noteDao.updateNote(
+                currentNote.copy(
+                    title = summary.title,
+                    rawText = transcription,
+                    summary = summary.summary,
+                    status = NoteStatus.SYNCED
+                )
             )
-            noteDao.updateNote(updatedNote)
-            
-        } catch (e: java.io.IOException) {
-            // Ошибка сети -> DRAFT
-            noteDao.updateStatus(noteId, NoteStatus.DRAFT)
+        } catch (e: IOException) {
+            markDraft(currentNote, e.message)
             throw e
         } catch (e: Exception) {
-            // Другая ошибка -> FAILED
-            noteDao.updateStatus(noteId, NoteStatus.FAILED)
+            markFailed(currentNote, e.message)
             throw e
         }
     }
-    
-    private fun getMimeType(file: File): String {
-        return when (file.extension.lowercase()) {
-            "mp3" -> "audio/mp3"
-            "m4a" -> "audio/mp4"
-            "wav" -> "audio/wav"
-            "aac" -> "audio/aac"
-            "ogg" -> "audio/ogg"
-            else -> "audio/mpeg"
-        }
-    }
-}
 
+    private suspend fun processWithCloud(
+        audioFile: File,
+        prefs: UserPreferences
+    ): Pair<String, AiSummary> {
+        val apiKey = prefs.apiKeyFor(prefs.selectedProvider)
+        if (apiKey.isBlank()) {
+            throw MissingApiKeyException(prefs.selectedProvider)
+        }
+        val service = aiServices.get(prefs.selectedProvider)
+        val transcriptionModel = prefs.selectedTranscriptionModel
+            ?: aiServices.defaultTranscriptionModel(prefs.selectedProvider)
+        val summaryModel = prefs.selectedSummaryModel
+            ?: aiServices.defaultSummaryModel(prefs.selectedProvider)
+        val transcription = service.transcribe(
+            audio = AudioInput(audioFile),
+            apiKey = apiKey,
+            modelId = transcriptionModel
+        )
+        return transcription to service.summarize(
+            text = transcription,
+            apiKey = apiKey,
+            modelId = summaryModel
+        )
+    }
+
+    private suspend fun markDraft(note: NoteEntity, detail: String?) {
+        noteDao.updateNote(
+            note.copy(
+                title = if (note.title == "Processing..." || note.title.isBlank()) {
+                    "Draft note"
+                } else {
+                    note.title
+                },
+                summary = detail?.take(180).orEmpty(),
+                status = NoteStatus.DRAFT
+            )
+        )
+    }
+
+    private suspend fun markFailed(note: NoteEntity, detail: String?) {
+        noteDao.updateNote(
+            note.copy(
+                title = if (note.title == "Processing..." || note.title.isBlank()) {
+                    "Failed note"
+                } else {
+                    note.title
+                },
+                summary = detail?.take(180).orEmpty(),
+                status = NoteStatus.FAILED
+            )
+        )
+    }
+
+}

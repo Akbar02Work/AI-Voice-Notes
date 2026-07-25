@@ -1,6 +1,5 @@
 package com.example.voicenotes.ui
 
-import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,16 +11,16 @@ import com.example.voicenotes.util.AudioPlayer
 import com.example.voicenotes.util.DateFormatter
 import com.example.voicenotes.util.ErrorHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.io.File
-import javax.inject.Inject
 
 data class NoteDetailsUiState(
     val note: NoteUi? = null,
@@ -34,53 +33,49 @@ data class NoteDetailsUiState(
 class NoteDetailsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: NoteRepository,
-    val audioPlayer: AudioPlayer
+    val audioPlayer: AudioPlayer,
+    private val dateFormatter: DateFormatter
 ) : ViewModel() {
 
     private val noteId: Long = checkNotNull(savedStateHandle["noteId"])
 
-    private val _uiState = MutableStateFlow(NoteDetailsUiState())
-    val uiState: StateFlow<NoteDetailsUiState> = _uiState.asStateFlow()
+    private val _error = MutableStateFlow<AppError?>(null)
+    private val _isDeleted = MutableStateFlow(false)
+    private var preparedAudioPath: String? = null
 
-    init {
-        loadNote()
-    }
-
-    private fun loadNote() {
-        viewModelScope.launch {
-            try {
-                val note = repository.getNoteById(noteId)
-                if (note != null) {
-                    _uiState.update { 
-                        it.copy(
-                            note = note.toUi(), 
-                            isLoading = false 
-                        ) 
-                    }
-                    // Подготавливаем плеер (можно авто-загрузку сделать, но лучше по клику)
-                } else {
-                    _uiState.update { 
-                        it.copy(
-                            isLoading = false,
-                            error = AppError.Unknown("Note not found")
-                        ) 
-                    }
-                }
-            } catch (e: Exception) {
-                _uiState.update { 
-                    it.copy(
-                        isLoading = false,
-                        error = ErrorHandler.fromException(e)
-                    ) 
+    private val noteFlow = repository.observeNoteById(noteId)
+        .distinctUntilChanged()
+        .onEach { entity ->
+            val path = entity?.audioPath ?: return@onEach
+            if (path != preparedAudioPath) {
+                val file = File(path)
+                if (file.exists()) {
+                    audioPlayer.prepareFile(file)
+                    preparedAudioPath = path
                 }
             }
         }
-    }
+
+    val uiState: StateFlow<NoteDetailsUiState> = combine(
+        noteFlow,
+        _error,
+        _isDeleted
+    ) { entity, error, isDeleted ->
+        NoteDetailsUiState(
+            note = entity?.toUi(),
+            isLoading = false,
+            error = error,
+            isDeleted = isDeleted
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = NoteDetailsUiState()
+    )
 
     fun deleteNote() {
         viewModelScope.launch {
             try {
-                // Сначала останавливаем плеер и удаляем файл
                 audioPlayer.stop()
                 val note = repository.getNoteById(noteId)
                 note?.let {
@@ -89,11 +84,11 @@ class NoteDetailsViewModel @Inject constructor(
                         file.delete()
                     }
                 }
-                
+
                 repository.deleteNote(noteId)
-                _uiState.update { it.copy(isDeleted = true) }
+                _isDeleted.value = true
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = AppError.DeleteFailed(e.message)) }
+                _error.value = AppError.DeleteFailed(e.message)
             }
         }
     }
@@ -102,30 +97,32 @@ class NoteDetailsViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 repository.updateNoteTitle(noteId, newTitle)
-                // Обновляем локальное состояние
-                _uiState.update { state -> 
-                    state.copy(note = state.note?.copy(title = newTitle))
-                }
             } catch (e: Exception) {
-                _uiState.update { it.copy(error = AppError.UpdateFailed(e.message)) }
+                _error.value = AppError.UpdateFailed(e.message)
             }
         }
     }
-    
-    fun playAudio() {
-        val note = _uiState.value.note ?: return
-        // NoteUi не хранит путь к файлу, нужно получить из Entity или передать в NoteUi
-        // Поскольку репозиторий возвращает Entity, мне нужно сохранить путь.
-        // Переделаем немного: загрузим Entity снова или добавим путь в NoteUi.
-        // Проще запросить путь через репозиторий.
-        
+
+    fun retryNote() {
         viewModelScope.launch {
-            val entity = repository.getNoteById(noteId)
-            entity?.let {
-                val file = File(it.audioPath)
-                audioPlayer.playFile(file)
+            try {
+                repository.retryNote(noteId)
+            } catch (e: Exception) {
+                _error.value = ErrorHandler.fromException(e)
             }
         }
+    }
+
+    fun playAudio() {
+        viewModelScope.launch {
+            val entity = repository.getNoteById(noteId) ?: return@launch
+            val file = File(entity.audioPath)
+            audioPlayer.playFile(file)
+        }
+    }
+
+    fun clearError() {
+        _error.value = null
     }
 
     override fun onCleared() {
@@ -138,12 +135,10 @@ class NoteDetailsViewModel @Inject constructor(
         title = title,
         rawText = rawText,
         summary = summary,
-        formattedDate = DateFormatter.formatTimestamp(timestamp),
-        previewText = rawText.take(100).replace("\n", " ") + if (rawText.length > 100) "..." else "",
-        status = status
+        formattedDate = dateFormatter.formatTimestamp(timestamp),
+        previewText = rawText.take(100).replace("\n", " ") +
+            if (rawText.length > 100) "..." else "",
+        status = status,
+        isPinned = isPinned
     )
-    
-    fun clearError() {
-        _uiState.update { it.copy(error = null) }
-    }
 }

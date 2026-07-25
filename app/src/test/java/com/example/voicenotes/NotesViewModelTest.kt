@@ -2,8 +2,11 @@ package com.example.voicenotes
 
 import com.example.voicenotes.data.NoteRepository
 import com.example.voicenotes.data.NoteStatus
+import com.example.voicenotes.util.NetworkMonitor
+import com.example.voicenotes.util.DateFormatter
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -21,27 +24,28 @@ import org.junit.Test
 /**
  * Unit tests for NotesViewModel.
  * Uses MockK for mocking dependencies and UnconfinedTestDispatcher for immediate execution.
- * 
- * Note: Some tests are simplified to focus on state and repository interactions
- * that don't require full coroutine scope management.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotesViewModelTest {
 
     private lateinit var viewModel: NotesViewModel
     private lateinit var noteRepository: NoteRepository
-    
+    private lateinit var networkMonitor: NetworkMonitor
+    private lateinit var dateFormatter: DateFormatter
+
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         noteRepository = mockk(relaxed = true)
-        
-        // Mock empty notes list by default
+        networkMonitor = mockk(relaxed = true)
+        dateFormatter = mockk(relaxed = true)
+
         coEvery { noteRepository.getAllNotes() } returns flowOf(emptyList())
-        
-        viewModel = NotesViewModel(noteRepository)
+        every { networkMonitor.isOnline } returns flowOf(false)
+
+        viewModel = NotesViewModel(noteRepository, networkMonitor, dateFormatter)
     }
 
     @After
@@ -74,11 +78,11 @@ class NotesViewModelTest {
             previewText = "preview",
             status = NoteStatus.FAILED
         )
-        
+
         coEvery { noteRepository.retryNote(1L) } returns Unit
-        
+
         viewModel.retryNote(noteUi)
-        
+
         coVerify { noteRepository.retryNote(1L) }
     }
 }

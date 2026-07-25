@@ -21,10 +21,9 @@ interface NoteDao {
     suspend fun insertNote(note: NoteEntity): Long
     
     /**
-     * Получить все заметки, отсортированные по дате (новые первыми).
-     * Возвращает Flow для реактивных обновлений.
+     * Получить все заметки: закреплённые сверху, затем по дате (новые первыми).
      */
-    @Query("SELECT * FROM notes ORDER BY timestamp DESC")
+    @Query("SELECT * FROM notes ORDER BY isPinned DESC, timestamp DESC")
     fun getAllNotes(): Flow<List<NoteEntity>>
     
     /**
@@ -32,6 +31,18 @@ interface NoteDao {
      */
     @Query("SELECT * FROM notes WHERE id = :noteId")
     suspend fun getNoteById(noteId: Long): NoteEntity?
+
+    /**
+     * Наблюдать за заметкой по ID (обновления статуса/текста после AI).
+     */
+    @Query("SELECT * FROM notes WHERE id = :noteId")
+    fun observeNoteById(noteId: Long): Flow<NoteEntity?>
+
+    /**
+     * Заметки в указанном статусе (например DRAFT для auto-retry).
+     */
+    @Query("SELECT * FROM notes WHERE status = :status ORDER BY timestamp ASC")
+    suspend fun getNotesByStatus(status: NoteStatus): List<NoteEntity>
     
     /**
      * Удалить заметку по ID.
@@ -50,6 +61,9 @@ interface NoteDao {
      */
     @Query("UPDATE notes SET status = :status WHERE id = :noteId")
     suspend fun updateStatus(noteId: Long, status: NoteStatus)
+
+    @Query("UPDATE notes SET isPinned = :isPinned WHERE id = :noteId")
+    suspend fun updatePinned(noteId: Long, isPinned: Boolean)
 
     /**
      * Обновить содержимое заметки (заголовок, текст, саммари, статус).

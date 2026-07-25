@@ -2,6 +2,7 @@ package com.example.voicenotes.di
 
 import android.content.Context
 import com.example.voicenotes.ai.GeminiAiService
+import com.example.voicenotes.ai.GroqAiService
 import com.example.voicenotes.ai.OpenAiService
 import com.example.voicenotes.data.AppDatabase
 import com.example.voicenotes.data.NoteDao
@@ -74,6 +75,12 @@ object AppModule {
     @Singleton
     fun provideOpenAiService(openAiApi: OpenAiApi): OpenAiService {
         return OpenAiService(openAiApi)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGroqAiService(): GroqAiService {
+        return GroqAiService(NetworkModule.groqApi)
     }
     /**
      * Предоставляет AudioPlayer.
