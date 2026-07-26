@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1024"
+     height="1024"
+     viewBox="0 0 1024 1024"
+     role="img"
+     aria-labelledby="title description">
+  <title id="title">Audio waveform app icon</title>
+  <desc id="description">A cyan open circular audio mark on a dark teal background.</desc>
+
+  <defs>
+    <linearGradient id="background" x1="112" y1="80" x2="912" y2="944"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#06171B"/>
+      <stop offset="0.55" stop-color="#081E23"/>
+      <stop offset="1" stop-color="#0A242A"/>
+    </linearGradient>
+    <radialGradient id="backgroundGlow" cx="512" cy="318" r="620"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10323A" stop-opacity="0.42"/>
+      <stop offset="0.72" stop-color="#091E23" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="230" y1="792" x2="744" y2="242"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#08CDD3"/>
+      <stop offset="0.52" stop-color="#0ED5DB"/>
+      <stop offset="1" stop-color="#28DDE1"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="660" y1="272" x2="752" y2="356"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#70F7C7"/>
+      <stop offset="1" stop-color="#45EDCE"/>
+    </linearGradient>
+    <linearGradient id="waveform" x1="512" y1="388" x2="512" y2="636"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#43E2E3"/>
+      <stop offset="1" stop-color="#1ACFD5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Full-bleed background: Android applies the launcher mask. -->
+  <rect width="1024" height="1024" fill="url(#background)"/>
+  <rect width="1024" height="1024" fill="url(#backgroundGlow)"/>
+
+  <!-- True circular arcs with round caps replace the uneven traced outlines. -->
+  <path d="M 783.6 413.2
+           A 289 289 0 1 1 601.3 237.1"
+        fill="none"
+        stroke="url(#ring)"
+        stroke-width="46"
+        stroke-linecap="round"/>
+  <path d="M 673.6 272.4
+           A 289 289 0 0 1 736.6 330.1"
+        fill="none"
+        stroke="url(#accent)"
+        stroke-width="46"
+        stroke-linecap="round"/>
+
+  <!-- Symmetric audio bars, aligned to a common center line. -->
+  <g fill="url(#waveform)">
+    <rect x="353" y="479" width="36" height="66" rx="18"/>
+    <rect x="424" y="445" width="36" height="134" rx="18"/>
+    <rect x="494" y="388" width="36" height="248" rx="18"/>
+    <rect x="564" y="445" width="36" height="134" rx="18"/>
+    <rect x="635" y="479" width="36" height="66" rx="18"/>
+  </g>
+</svg>

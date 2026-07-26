@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <clipPath id="legacyMask">
+      <rect x="32" y="32" width="960" height="960" rx="190"/>
+    </clipPath>
+    <linearGradient id="background" x1="112" y1="80" x2="912" y2="944"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#06171B"/>
+      <stop offset="0.55" stop-color="#081E23"/>
+      <stop offset="1" stop-color="#0A242A"/>
+    </linearGradient>
+    <radialGradient id="backgroundGlow" cx="512" cy="318" r="620"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10323A" stop-opacity="0.42"/>
+      <stop offset="0.72" stop-color="#091E23" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="230" y1="792" x2="744" y2="242"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#08CDD3"/>
+      <stop offset="0.52" stop-color="#0ED5DB"/>
+      <stop offset="1" stop-color="#28DDE1"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="660" y1="272" x2="752" y2="356"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#70F7C7"/>
+      <stop offset="1" stop-color="#45EDCE"/>
+    </linearGradient>
+    <linearGradient id="waveform" x1="512" y1="388" x2="512" y2="636"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#43E2E3"/>
+      <stop offset="1" stop-color="#1ACFD5"/>
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#legacyMask)">
+    <rect width="1024" height="1024" fill="url(#background)"/>
+    <rect width="1024" height="1024" fill="url(#backgroundGlow)"/>
+    <path d="M783.6 413.2A289 289 0 1 1 601.3 237.1"
+          fill="none" stroke="url(#ring)" stroke-width="46" stroke-linecap="round"/>
+    <path d="M673.6 272.4A289 289 0 0 1 736.6 330.1"
+          fill="none" stroke="url(#accent)" stroke-width="46" stroke-linecap="round"/>
+    <g fill="none" stroke="url(#waveform)" stroke-width="36" stroke-linecap="round">
+      <path d="M371 497V527"/>
+      <path d="M442 463V561"/>
+      <path d="M512 406V618"/>
+      <path d="M582 463V561"/>
+      <path d="M653 497V527"/>
+    </g>
+  </g>
+</svg>
