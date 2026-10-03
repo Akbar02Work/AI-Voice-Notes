@@ -12,7 +12,7 @@ import androidx.compose.runtime.Immutable
  * Prefer springs for UI feedback; use [navTween] for navigation slides.
  */
 @Immutable
-object VoiceNotesMotion {
+object AIVoiceNotesMotion {
     /** Emphasized decelerate — enters that settle with presence. */
     val emphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1.0f)
 

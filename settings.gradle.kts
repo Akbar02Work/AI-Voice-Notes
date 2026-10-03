@@ -20,5 +20,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "VoiceNotes"
+rootProject.name = "AIVoiceNotes"
 include(":app")

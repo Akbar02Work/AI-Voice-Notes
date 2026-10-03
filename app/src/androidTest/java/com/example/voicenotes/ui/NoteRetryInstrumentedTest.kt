@@ -7,7 +7,7 @@ import androidx.compose.ui.test.performClick
 import com.example.voicenotes.NoteListCard
 import com.example.voicenotes.NoteUi
 import com.example.voicenotes.data.NoteStatus
-import com.example.voicenotes.ui.theme.VoiceNotesTheme
+import com.example.voicenotes.ui.theme.AIVoiceNotesTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -22,7 +22,7 @@ class NoteRetryInstrumentedTest {
         var retried = false
 
         composeRule.setContent {
-            VoiceNotesTheme {
+            AIVoiceNotesTheme {
                 NoteListCard(
                     note = NoteUi(
                         id = 1,

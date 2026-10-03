@@ -1,12 +1,12 @@
-# Contributing to VoiceNotes
+# Contributing to AI Voice Notes
 
-Thank you for considering contributing to VoiceNotes.
+Thank you for considering contributing to AI Voice Notes.
 
 ## How to Contribute
 
 ### Reporting Bugs
 
-1. Check if the bug has already been reported in [Issues](https://github.com/Akbar02Work/VoiceNotes/issues)
+1. Check if the bug has already been reported in [Issues](https://github.com/Akbar02Work/AI-Voice-Notes/issues)
 2. If not, create a new issue with:
    - Clear description of the problem
    - Steps to reproduce
@@ -62,7 +62,7 @@ Follow conventional commits:
 
 ```bash
 # Clone your fork
-git clone https://github.com/Akbar02Work/VoiceNotes.git
+git clone https://github.com/Akbar02Work/AI-Voice-Notes.git
 
 # Create feature branch
 git checkout -b feature/my-feature

@@ -34,8 +34,8 @@ import com.example.voicenotes.ai.AiProvider
 import com.example.voicenotes.ai.CloudProviderCatalog
 import com.example.voicenotes.ai.InferenceMode
 import com.example.voicenotes.data.ThemeMode
-import com.example.voicenotes.ui.theme.VoiceNotesMotion
-import com.example.voicenotes.ui.theme.VoiceNotesTheme
+import com.example.voicenotes.ui.theme.AIVoiceNotesMotion
+import com.example.voicenotes.ui.theme.AIVoiceNotesTheme
 import com.example.voicenotes.util.RecordingStorage
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
             val settingsViewModel: SettingsViewModel = hiltViewModel()
             val userPrefsState by settingsViewModel.userPreferences.collectAsState()
 
-            VoiceNotesTheme(
+            AIVoiceNotesTheme(
                 themeMode = userPrefsState?.themeMode ?: ThemeMode.SYSTEM,
                 dynamicColor = userPrefsState?.useDynamicColor ?: true
             ) {
@@ -249,25 +249,25 @@ class MainActivity : AppCompatActivity() {
                         enterTransition = {
                             slideIntoContainer(
                                 towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = VoiceNotesMotion.navTween()
+                                animationSpec = AIVoiceNotesMotion.navTween()
                             )
                         },
                         exitTransition = {
                             slideOutOfContainer(
                                 towards = AnimatedContentTransitionScope.SlideDirection.Left,
-                                animationSpec = VoiceNotesMotion.navTween()
+                                animationSpec = AIVoiceNotesMotion.navTween()
                             )
                         },
                         popEnterTransition = {
                             slideIntoContainer(
                                 towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = VoiceNotesMotion.navTween()
+                                animationSpec = AIVoiceNotesMotion.navTween()
                             )
                         },
                         popExitTransition = {
                             slideOutOfContainer(
                                 towards = AnimatedContentTransitionScope.SlideDirection.Right,
-                                animationSpec = VoiceNotesMotion.navTween()
+                                animationSpec = AIVoiceNotesMotion.navTween()
                             )
                         }
                     ) {

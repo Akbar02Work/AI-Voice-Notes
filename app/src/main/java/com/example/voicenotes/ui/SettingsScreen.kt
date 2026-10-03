@@ -99,8 +99,8 @@ import com.example.voicenotes.ai.CloudProviderCatalog
 import com.example.voicenotes.ai.InferenceMode
 import com.example.voicenotes.data.ThemeMode
 import com.example.voicenotes.data.apiKeyFor
-import com.example.voicenotes.ui.theme.VoiceNotesMotion
-import com.example.voicenotes.ui.theme.VoiceNotesPillShape
+import com.example.voicenotes.ui.theme.AIVoiceNotesMotion
+import com.example.voicenotes.ui.theme.AIVoiceNotesPillShape
 import com.example.voicenotes.ui.theme.isDynamicColorSupported
 import com.example.voicenotes.ui.theme.spacing
 
@@ -412,10 +412,10 @@ fun SettingsScreen(
 
                 AnimatedVisibility(
                     visible = keyStatus == ApiKeyStatus.ERROR,
-                    enter = fadeIn(animationSpec = VoiceNotesMotion.fadeTween()) +
-                        expandVertically(animationSpec = VoiceNotesMotion.navTween()),
-                    exit = fadeOut(animationSpec = VoiceNotesMotion.fadeTween()) +
-                        shrinkVertically(animationSpec = VoiceNotesMotion.navTween())
+                    enter = fadeIn(animationSpec = AIVoiceNotesMotion.fadeTween()) +
+                        expandVertically(animationSpec = AIVoiceNotesMotion.navTween()),
+                    exit = fadeOut(animationSpec = AIVoiceNotesMotion.fadeTween()) +
+                        shrinkVertically(animationSpec = AIVoiceNotesMotion.navTween())
                 ) {
                     KeyErrorFooter(
                         message = discoveryForProvider?.error.orEmpty(),
@@ -493,7 +493,7 @@ fun SettingsScreen(
             SettingsSection(title = stringResource(R.string.settings_section_about)) {
                 SettingsRow(
                     icon = Icons.Outlined.Info,
-                    title = stringResource(R.string.settings_about_subtitle),
+                    title = stringResource(R.string.app_name),
                     subtitle = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME)
                 )
             }
@@ -687,7 +687,7 @@ private fun ThemeModeRow(
 @Composable
 private fun RowIcon(icon: ImageVector) {
     Surface(
-        shape = VoiceNotesPillShape,
+        shape = AIVoiceNotesPillShape,
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant
     ) {
@@ -720,7 +720,7 @@ private fun ApiKeyStatusBadge(status: ApiKeyStatus) {
             ApiKeyStatus.ERROR -> MaterialTheme.colorScheme.errorContainer
             else -> MaterialTheme.colorScheme.surfaceContainerHighest
         },
-        animationSpec = VoiceNotesMotion.fadeTween(),
+        animationSpec = AIVoiceNotesMotion.fadeTween(),
         label = "key_status_container"
     )
     val contentColor = when (status) {
@@ -730,7 +730,7 @@ private fun ApiKeyStatusBadge(status: ApiKeyStatus) {
     }
 
     Surface(
-        shape = VoiceNotesPillShape,
+        shape = AIVoiceNotesPillShape,
         color = containerColor,
         contentColor = contentColor
     ) {
@@ -997,7 +997,7 @@ private fun DialogOptionRow(
         } else {
             Color.Transparent
         },
-        animationSpec = VoiceNotesMotion.fadeTween(),
+        animationSpec = AIVoiceNotesMotion.fadeTween(),
         label = "dialog_option_container"
     )
 

@@ -1,13 +1,18 @@
-# VoiceNotes
+# AI Voice Notes
 
-[![Android CI](https://github.com/Akbar02Work/VoiceNotes/actions/workflows/android.yml/badge.svg)](https://github.com/Akbar02Work/VoiceNotes/actions/workflows/android.yml)
+[![Android CI](https://github.com/Akbar02Work/AI-Voice-Notes/actions/workflows/android.yml/badge.svg)](https://github.com/Akbar02Work/AI-Voice-Notes/actions/workflows/android.yml)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Android](https://img.shields.io/badge/Android-7%2B-3DDC84?logo=android&logoColor=white)](https://developer.android.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-VoiceNotes is a native Android app that turns short recordings into searchable notes with a transcription, title, summary, and playable audio. Processing can use Gemini, OpenAI, Groq, or a fully on-device Russian speech-to-text model.
+AI Voice Notes is a native Android app that turns short recordings into searchable notes with a transcription, title, summary, and playable audio. Processing can use Gemini, OpenAI, Groq, or a fully on-device Russian speech-to-text model.
 
 The project focuses on a polished recording flow, recoverable failure states, secure bring-your-own-key storage, and offline inference that does not treat arbitrary model files as interchangeable.
+
+## Download
+
+The latest [AI Voice Notes release](https://github.com/Akbar02Work/AI-Voice-Notes/releases/latest)
+includes a debug-signed APK for arm64 Android devices, intended for portfolio evaluation.
 
 ## Screenshots
 
@@ -56,8 +61,8 @@ The project focuses on a polished recording flow, recoverable failure states, se
 | Groq | OpenAI-compatible Whisper | OpenAI-compatible chat | Required |
 | On device | sherpa-onnx Zipformer | Extractive local processing | Not required after download |
 
-Cloud mode uses a bring-your-own-key model. VoiceNotes validates the key, discovers compatible models, and stores the selected transcription and summary models separately.
+Cloud mode uses a bring-your-own-key model. AI Voice Notes validates the key, discovers compatible models, and stores the selected transcription and summary models separately.
 
 Built by [Akbar Azizov](https://www.akbar02work.xyz) as a portfolio-focused Android project.
 
-[Read the VoiceNotes case study →](https://www.akbar02work.xyz/projects/voicenotes)
+[Read the AI Voice Notes case study →](https://www.akbar02work.xyz/projects/voicenotes)

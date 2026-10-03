@@ -86,8 +86,8 @@ import com.example.voicenotes.ai.AvailableAiModels
 import com.example.voicenotes.ai.AiModel
 import com.example.voicenotes.ai.InferenceMode
 import com.example.voicenotes.ai.LocalModelState
-import com.example.voicenotes.ui.theme.VoiceNotesMotion
-import com.example.voicenotes.ui.theme.VoiceNotesPillShape
+import com.example.voicenotes.ui.theme.AIVoiceNotesMotion
+import com.example.voicenotes.ui.theme.AIVoiceNotesPillShape
 import com.example.voicenotes.ui.theme.spacing
 
 @Composable
@@ -199,11 +199,11 @@ fun SetupScreen(
                     val forward = targetState.ordinal > initialState.ordinal
                     val offset = if (forward) 1 else -1
                     (
-                        fadeIn(animationSpec = VoiceNotesMotion.fadeTween()) +
-                            slideInVertically(animationSpec = VoiceNotesMotion.navTween()) {
+                        fadeIn(animationSpec = AIVoiceNotesMotion.fadeTween()) +
+                            slideInVertically(animationSpec = AIVoiceNotesMotion.navTween()) {
                                 offset * it / 12
                             }
-                        ) togetherWith fadeOut(animationSpec = VoiceNotesMotion.fadeTween())
+                        ) togetherWith fadeOut(animationSpec = AIVoiceNotesMotion.fadeTween())
                 },
                 label = "setup_mode_content"
             ) { mode ->
@@ -264,8 +264,8 @@ private fun SetupHeader(inferenceMode: InferenceMode) {
                 AnimatedContent(
                     targetState = inferenceMode,
                     transitionSpec = {
-                        fadeIn(animationSpec = VoiceNotesMotion.fadeTween()) togetherWith
-                            fadeOut(animationSpec = VoiceNotesMotion.fadeTween())
+                        fadeIn(animationSpec = AIVoiceNotesMotion.fadeTween()) togetherWith
+                            fadeOut(animationSpec = AIVoiceNotesMotion.fadeTween())
                     },
                     label = "setup_header_icon"
                 ) { mode ->
@@ -349,10 +349,10 @@ private fun CloudSetupSection(
 
         AnimatedVisibility(
             visible = selected != null,
-            enter = fadeIn(animationSpec = VoiceNotesMotion.fadeTween()) +
-                expandVertically(animationSpec = VoiceNotesMotion.navTween()),
-            exit = fadeOut(animationSpec = VoiceNotesMotion.fadeTween()) +
-                shrinkVertically(animationSpec = VoiceNotesMotion.navTween())
+            enter = fadeIn(animationSpec = AIVoiceNotesMotion.fadeTween()) +
+                expandVertically(animationSpec = AIVoiceNotesMotion.navTween()),
+            exit = fadeOut(animationSpec = AIVoiceNotesMotion.fadeTween()) +
+                shrinkVertically(animationSpec = AIVoiceNotesMotion.navTween())
         ) {
             Column(
                 modifier = Modifier
@@ -565,7 +565,7 @@ private fun OptionRow(
             selected -> MaterialTheme.colorScheme.secondaryContainer
             else -> MaterialTheme.colorScheme.surfaceContainerLow
         },
-        animationSpec = VoiceNotesMotion.fadeTween(),
+        animationSpec = AIVoiceNotesMotion.fadeTween(),
         label = "option_container"
     )
     val borderColor by animateColorAsState(
@@ -573,12 +573,12 @@ private fun OptionRow(
             selected && enabled -> MaterialTheme.colorScheme.primary
             else -> MaterialTheme.colorScheme.outlineVariant
         },
-        animationSpec = VoiceNotesMotion.fadeTween(),
+        animationSpec = AIVoiceNotesMotion.fadeTween(),
         label = "option_border"
     )
     val borderWidth by animateDpAsState(
         targetValue = if (selected && enabled) 2.dp else 1.dp,
-        animationSpec = VoiceNotesMotion.snappySpring(),
+        animationSpec = AIVoiceNotesMotion.snappySpring(),
         label = "option_border_width"
     )
     val contentAlpha = if (enabled) 1f else 0.38f
@@ -607,7 +607,7 @@ private fun OptionRow(
             horizontalArrangement = Arrangement.spacedBy(spacing.medium)
         ) {
             Surface(
-                shape = VoiceNotesPillShape,
+                shape = AIVoiceNotesPillShape,
                 color = if (selected && enabled) {
                     MaterialTheme.colorScheme.primary
                 } else {
@@ -704,13 +704,13 @@ private fun SetupBottomBar(
                     .fillMaxWidth()
                     .height(56.dp),
                 enabled = canSubmit,
-                shape = VoiceNotesPillShape
+                shape = AIVoiceNotesPillShape
             ) {
                 AnimatedContent(
                     targetState = isSaving,
                     transitionSpec = {
-                        fadeIn(animationSpec = VoiceNotesMotion.fadeTween()) togetherWith
-                            fadeOut(animationSpec = VoiceNotesMotion.fadeTween())
+                        fadeIn(animationSpec = AIVoiceNotesMotion.fadeTween()) togetherWith
+                            fadeOut(animationSpec = AIVoiceNotesMotion.fadeTween())
                     },
                     label = "setup_cta_content"
                 ) { saving ->
@@ -749,7 +749,7 @@ private fun SetupBottomBar(
                 onClick = onSkipClick,
                 enabled = !isSaving,
                 modifier = Modifier.fillMaxWidth(),
-                shape = VoiceNotesPillShape
+                shape = AIVoiceNotesPillShape
             ) {
                 Text(
                     text = stringResource(R.string.setup_skip),

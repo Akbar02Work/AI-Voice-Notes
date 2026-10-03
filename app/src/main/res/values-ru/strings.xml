@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App -->
-    <string name="app_name">Голосовые заметки</string>
+    <string name="app_name">AI Voice Notes</string>
     <string name="date_today_format">Сегодня, %1$s</string>
     <string name="date_yesterday_format">Вчера, %1$s</string>
     <string name="settings_secure_storage_error">Защищённое хранилище недоступно. API-ключ не был сохранён.</string>

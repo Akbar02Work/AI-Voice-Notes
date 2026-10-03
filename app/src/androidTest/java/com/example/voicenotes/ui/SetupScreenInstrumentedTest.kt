@@ -6,7 +6,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.example.voicenotes.ai.CloudProviderCatalog
 import com.example.voicenotes.ai.InferenceMode
-import com.example.voicenotes.ui.theme.VoiceNotesTheme
+import com.example.voicenotes.ui.theme.AIVoiceNotesTheme
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -22,7 +22,7 @@ class SetupScreenInstrumentedTest {
         var skipped = false
 
         composeRule.setContent {
-            VoiceNotesTheme {
+            AIVoiceNotesTheme {
                 SetupScreen(
                     inferenceMode = selectedMode,
                     selectedProviderId = CloudProviderCatalog.options.first().id,

@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * Fallback M3 palette seeded from Android blue (#0B57D0).
- * On Android 12+ [VoiceNotesTheme] prefers dynamic system colors instead.
+ * On Android 12+ [AIVoiceNotesTheme] prefers dynamic system colors instead.
  */
 
 // Light
