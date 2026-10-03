@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App -->
-    <string name="app_name">VoiceNotes</string>
+    <string name="app_name">AI Voice Notes</string>
     <string name="date_today_format">Today, %1$s</string>
     <string name="date_yesterday_format">Yesterday, %1$s</string>
     <string name="settings_secure_storage_error">Secure storage is unavailable. The API key was not saved.</string>

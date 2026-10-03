@@ -96,8 +96,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.voicenotes.data.NoteStatus
-import com.example.voicenotes.ui.theme.VoiceNotesMotion
-import com.example.voicenotes.ui.theme.VoiceNotesPillShape
+import com.example.voicenotes.ui.theme.AIVoiceNotesMotion
+import com.example.voicenotes.ui.theme.AIVoiceNotesPillShape
 import com.example.voicenotes.ui.theme.spacing
 import com.example.voicenotes.util.ErrorHandler
 import java.io.File
@@ -116,7 +116,7 @@ fun NoteListCard(
         } else {
             MaterialTheme.colorScheme.surfaceContainerLow
         },
-        animationSpec = VoiceNotesMotion.fadeTween(),
+        animationSpec = AIVoiceNotesMotion.fadeTween(),
         label = "note_card_bg"
     )
     val contentColor by animateColorAsState(
@@ -125,7 +125,7 @@ fun NoteListCard(
         } else {
             MaterialTheme.colorScheme.onSurface
         },
-        animationSpec = VoiceNotesMotion.fadeTween(),
+        animationSpec = AIVoiceNotesMotion.fadeTween(),
         label = "note_card_fg"
     )
 
@@ -149,7 +149,7 @@ fun NoteListCard(
                 horizontalArrangement = Arrangement.spacedBy(spacing.medium)
             ) {
                 Surface(
-                    shape = VoiceNotesPillShape,
+                    shape = AIVoiceNotesPillShape,
                     color = if (note.isPinned) {
                         MaterialTheme.colorScheme.primary
                     } else {
@@ -208,10 +208,10 @@ fun NoteListCard(
 
             AnimatedVisibility(
                 visible = note.status != NoteStatus.SYNCED,
-                enter = fadeIn(VoiceNotesMotion.fadeTween()) +
-                    expandVertically(VoiceNotesMotion.navTween()),
-                exit = fadeOut(VoiceNotesMotion.fadeTween()) +
-                    shrinkVertically(VoiceNotesMotion.navTween())
+                enter = fadeIn(AIVoiceNotesMotion.fadeTween()) +
+                    expandVertically(AIVoiceNotesMotion.navTween()),
+                exit = fadeOut(AIVoiceNotesMotion.fadeTween()) +
+                    shrinkVertically(AIVoiceNotesMotion.navTween())
             ) {
                 NoteStatusBanner(
                     status = note.status,
@@ -312,7 +312,7 @@ private fun NoteStatusBanner(
                         .semantics {
                             contentDescription = context.getString(R.string.cd_retry_processing)
                         },
-                    shape = VoiceNotesPillShape,
+                    shape = AIVoiceNotesPillShape,
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = onContainer
@@ -394,7 +394,7 @@ fun SwipeableNoteCard(
                     showPin -> MaterialTheme.colorScheme.primary
                     else -> Color.Transparent
                 },
-                animationSpec = VoiceNotesMotion.fadeTween(),
+                animationSpec = AIVoiceNotesMotion.fadeTween(),
                 label = "swipe_bg"
             )
             val contentColor by animateColorAsState(
@@ -403,7 +403,7 @@ fun SwipeableNoteCard(
                     showPin -> MaterialTheme.colorScheme.onPrimary
                     else -> Color.Transparent
                 },
-                animationSpec = VoiceNotesMotion.fadeTween(),
+                animationSpec = AIVoiceNotesMotion.fadeTween(),
                 label = "swipe_fg"
             )
 
@@ -534,7 +534,7 @@ private fun RecordFab(
         targetValue = if (isRecording) 1.08f else 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = VoiceNotesMotion.longDurationMs,
+                durationMillis = AIVoiceNotesMotion.longDurationMs,
                 easing = FastOutSlowInEasing
             ),
             repeatMode = RepeatMode.Reverse
@@ -548,7 +548,7 @@ private fun RecordFab(
         } else {
             MaterialTheme.colorScheme.primaryContainer
         },
-        animationSpec = VoiceNotesMotion.fadeTween(),
+        animationSpec = AIVoiceNotesMotion.fadeTween(),
         label = "fab_bg"
     )
     val contentColor by animateColorAsState(
@@ -557,16 +557,16 @@ private fun RecordFab(
         } else {
             MaterialTheme.colorScheme.onPrimaryContainer
         },
-        animationSpec = VoiceNotesMotion.fadeTween(),
+        animationSpec = AIVoiceNotesMotion.fadeTween(),
         label = "fab_fg"
     )
 
     AnimatedContent(
         targetState = isRecording || expanded,
         transitionSpec = {
-            (fadeIn(VoiceNotesMotion.fadeTween()) +
-                scaleIn(VoiceNotesMotion.expressiveSpring(), initialScale = 0.92f)) togetherWith
-                (fadeOut(VoiceNotesMotion.fadeTween()) + scaleOut(targetScale = 0.92f))
+            (fadeIn(AIVoiceNotesMotion.fadeTween()) +
+                scaleIn(AIVoiceNotesMotion.expressiveSpring(), initialScale = 0.92f)) togetherWith
+                (fadeOut(AIVoiceNotesMotion.fadeTween()) + scaleOut(targetScale = 0.92f))
         },
         label = "fab_mode"
     ) { useExtended ->
@@ -579,7 +579,7 @@ private fun RecordFab(
                         scaleX = pulse
                         scaleY = pulse
                     },
-                shape = VoiceNotesPillShape,
+                shape = AIVoiceNotesPillShape,
                 containerColor = containerColor,
                 contentColor = contentColor,
                 elevation = FloatingActionButtonDefaults.elevation(
@@ -775,9 +775,9 @@ fun NotesListScreen(
                         onPinToggle = { viewModel.togglePin(note.id, note.isPinned) },
                         onRetry = { viewModel.retryNote(note) },
                         modifier = Modifier.animateItem(
-                            fadeInSpec = VoiceNotesMotion.fadeTween(),
-                            fadeOutSpec = VoiceNotesMotion.fadeTween(),
-                            placementSpec = VoiceNotesMotion.expressiveSpring()
+                            fadeInSpec = AIVoiceNotesMotion.fadeTween(),
+                            fadeOutSpec = AIVoiceNotesMotion.fadeTween(),
+                            placementSpec = AIVoiceNotesMotion.expressiveSpring()
                         )
                     )
                 }

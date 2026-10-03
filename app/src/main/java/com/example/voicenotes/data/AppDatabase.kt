@@ -8,7 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
- * Room база данных для приложения VoiceNotes.
+ * Room база данных для приложения AI Voice Notes.
  * Синглтон — одно соединение на всё приложение.
  */
 @Database(entities = [NoteEntity::class], version = 4, exportSchema = false)

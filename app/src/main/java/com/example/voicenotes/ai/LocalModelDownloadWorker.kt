@@ -13,6 +13,7 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.example.voicenotes.BuildConfig
 import com.example.voicenotes.R
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -104,7 +105,7 @@ class LocalModelDownloadWorker(
         var offset = partial.length()
         val request = Request.Builder()
             .url(archive.url)
-            .header("User-Agent", "VoiceNotes/1.0")
+            .header("User-Agent", "AIVoiceNotes/${BuildConfig.VERSION_NAME}")
             .apply {
                 if (offset > 0) header("Range", "bytes=$offset-")
             }

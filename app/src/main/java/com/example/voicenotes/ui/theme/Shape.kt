@@ -7,7 +7,7 @@ import androidx.compose.ui.unit.dp
 /**
  * Material 3 Expressive-leaning shapes: softer chips, roomier cards, bold FAB/sheets.
  */
-val VoiceNotesShapes = Shapes(
+val AIVoiceNotesShapes = Shapes(
     extraSmall = RoundedCornerShape(8.dp),
     small = RoundedCornerShape(12.dp),
     medium = RoundedCornerShape(20.dp),
@@ -16,7 +16,7 @@ val VoiceNotesShapes = Shapes(
 )
 
 /** Full-pill for FABs, recording affordances, and expressive CTAs. */
-val VoiceNotesPillShape = RoundedCornerShape(percent = 50)
+val AIVoiceNotesPillShape = RoundedCornerShape(percent = 50)
 
 /** Bottom sheets / player bars — soft top corners, flat bottom. */
-val VoiceNotesSheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+val AIVoiceNotesSheetShape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)

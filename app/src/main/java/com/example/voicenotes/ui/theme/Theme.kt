@@ -97,7 +97,7 @@ val isDynamicColorSupported: Boolean
     get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
 
 @Composable
-fun VoiceNotesTheme(
+fun AIVoiceNotesTheme(
     themeMode: ThemeMode = ThemeMode.SYSTEM,
     // Prefer wallpaper / system accent on Android 12+
     dynamicColor: Boolean = true,
@@ -134,7 +134,7 @@ fun VoiceNotesTheme(
         MaterialTheme(
             colorScheme = colorScheme,
             typography = Typography,
-            shapes = VoiceNotesShapes,
+            shapes = AIVoiceNotesShapes,
             content = content
         )
     }

@@ -66,7 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.voicenotes.R
 import com.example.voicenotes.data.NoteStatus
-import com.example.voicenotes.ui.theme.VoiceNotesPillShape
+import com.example.voicenotes.ui.theme.AIVoiceNotesPillShape
 import com.example.voicenotes.ui.theme.spacing
 import com.example.voicenotes.util.AudioPlayerState
 import com.example.voicenotes.util.ErrorHandler
@@ -459,7 +459,7 @@ private fun NoteDetailsStatusBanner(
                         .semantics {
                             contentDescription = context.getString(R.string.cd_retry_processing)
                         },
-                    shape = VoiceNotesPillShape,
+                    shape = AIVoiceNotesPillShape,
                     colors = ButtonDefaults.filledTonalButtonColors(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = onContainer
