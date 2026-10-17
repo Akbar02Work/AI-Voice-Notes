@@ -24,25 +24,57 @@ includes a debug-signed APK for arm64 Android devices, intended for portfolio ev
 
 <table>
 <tr>
-<th>Cloud setup</th>
-<th>On-device setup</th>
+<th>Notes list</th>
+<th>Processing</th>
+<th>Note details and playback</th>
 </tr>
 <tr>
-<td><img src="screenshots/setup-cloud.jpg" alt="Cloud provider setup" width="360"></td>
-<td><img src="screenshots/setup-offline.jpg" alt="On-device model setup" width="360"></td>
+<td>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/notes-list-dark.jpg">
+  <img src="screenshots/notes-list-light.jpg" alt="Completed English notes with generated titles and summaries" width="260">
+</picture>
+</td>
+<td>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/processing-dark.jpg">
+  <img src="screenshots/processing-light.jpg" alt="A new recording being processed alongside saved notes" width="260">
+</picture>
+</td>
+<td>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/note-details-dark.jpg">
+  <img src="screenshots/note-details-light.jpg" alt="Audio playback, English summary, and full transcription" width="260">
+</picture>
+</td>
 </tr>
 </table>
 
 <table>
 <tr>
-<th>Notes list</th>
-<th>Note details and playback</th>
-<th>Settings</th>
+<th>Cloud model selection</th>
+<th>Offline models</th>
+<th>Appearance and language</th>
 </tr>
 <tr>
-<td><img src="screenshots/notes-list.jpg" alt="Notes list" width="260"></td>
-<td><img src="screenshots/note-details.jpg" alt="Transcribed note details" width="260"></td>
-<td><img src="screenshots/settings.jpg" alt="Appearance and language settings" width="260"></td>
+<td>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/models-dark.jpg">
+  <img src="screenshots/models-light.jpg" alt="Transcription model selection from the active provider catalog" width="260">
+</picture>
+</td>
+<td>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/offline-models-dark.jpg">
+  <img src="screenshots/offline-models-light.jpg" alt="Installed and active on-device Russian speech model" width="260">
+</picture>
+</td>
+<td>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="screenshots/settings-dark.jpg">
+  <img src="screenshots/settings-light.jpg" alt="Theme, dynamic color, and language settings" width="260">
+</picture>
+</td>
 </tr>
 </table>
 

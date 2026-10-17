@@ -1,11 +1,13 @@
-# Screenshot set
+# Screenshots
 
-The repository uses five real-device screenshots:
+English screenshots used in the project README. Each screen has matching
+`-light.jpg` and `-dark.jpg` files; the README selects the image for the reader's color theme.
 
-- `setup-cloud.jpg` — cloud provider selection
-- `setup-offline.jpg` — on-device model selection
-- `notes-list.jpg` — completed notes list
-- `note-details.jpg` — transcription, summary, and audio playback
-- `settings.jpg` — appearance and language settings
+- `notes-list` — completed notes with generated titles and summaries
+- `processing` — a new recording being processed
+- `note-details` — transcription, summary, and audio playback
+- `models` — cloud transcription model selection
+- `offline-models` — installed and active on-device Russian speech model
+- `settings` — appearance and language settings
 
-Keep future replacements at the same names so README links remain stable.
+The original 1080 × 2241 JPEG screenshots are preserved without resizing or cropping.
