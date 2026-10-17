@@ -9,6 +9,12 @@ AI Voice Notes is a native Android app that turns short recordings into searchab
 
 The project focuses on a polished recording flow, recoverable failure states, secure bring-your-own-key storage, and offline inference that does not treat arbitrary model files as interchangeable.
 
+## Product film
+
+Say it messy. AI cleans it up.
+
+https://github.com/user-attachments/assets/1e732031-758c-4114-ad42-767aa66912da
+
 ## Download
 
 The latest [AI Voice Notes release](https://github.com/Akbar02Work/AI-Voice-Notes/releases/latest)
