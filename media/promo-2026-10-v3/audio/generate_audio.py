@@ -3,8 +3,8 @@
 
 Python standard library only: additive sines, seeded noise, one-pole filters; no samples and
 no third-party music. Deterministic. Cue times come from remotion/src/timeline.json, the same
-file that drives the picture. The spoken line is the user's own ElevenLabs voice clone
-(audio/src/voice-take-a.wav, decoded from the delivered MP3), placed at timeline voice.offset.
+file that drives the picture. Both spoken takes use the user's own ElevenLabs voice clone:
+the opening thought and the final "AI Voice Notes" line, decoded from the delivered MP3s.
 
 Writes remotion/public/audio/mix.wav (48 kHz stereo 16-bit) and audio/mix.measure.json.
 
@@ -40,7 +40,7 @@ CEIL = 10 ** (-1.5 / 20)
 tl = json.loads((ROOT / "remotion/src/timeline.json").read_text())
 DUR = float(tl["film"]["durationSeconds"])
 T = tl["t"]
-V = float(tl["voice"]["offset"])
+VOICES = [tl["voice"], tl["outroVoice"]]
 N = int(DUR * SR)
 rng = random.Random(20261017)
 
@@ -201,20 +201,21 @@ def click(start, amp):
     put(start, out, amp, 0.15)
 
 
-def voice():
-    w = wave.open(str(HERE / "src" / tl["voice"]["file"]))
-    assert w.getframerate() == SR and w.getnchannels() == 1
-    n = w.getnframes()
-    d = struct.unpack("<%dh" % n, w.readframes(n))
-    i0 = int(round(V * SR))
+def voice(cue):
+    with wave.open(str(HERE / "src" / cue["file"])) as w:
+        assert w.getframerate() == SR and w.getnchannels() == 1 and w.getsampwidth() == 2
+        n = w.getnframes()
+        d = struct.unpack("<%dh" % n, w.readframes(n))
+    i0 = int(round(float(cue["offset"]) * SR))
+    assert i0 >= 0 and i0 + n <= N, "Voice take must fit the film without truncation"
     for j, x in enumerate(d):
-        if 0 <= i0 + j < N:
-            VL[i0 + j] = x / 32768.0
+        VL[i0 + j] += x / 32768.0
 
 
 # ------------------------------------------------------------------ score
 pad()
-voice()
+for cue in VOICES:
+    voice(cue)
 
 clean = T["clean"]
 for j, (f, pan) in enumerate([("A5", -0.35), ("F5", 0.3), ("D5", -0.2), ("C5", 0.4)]):
@@ -262,10 +263,13 @@ for i in range(N):
 
 # ------------------------------------------------------------------ mix: music under the voice
 MUSIC = 0.5  # the voice leads; score and effects sit ~6 dB under it
-vend = float(tl["voice"]["end"])
 for i in range(N):
     t = i / SR
-    duck = 1 - 0.5 * max(0.0, min(1.0, (t - V + 0.3) / 0.3, (vend + 0.4 - t) / 0.5))
+    duck = 1 - 0.5 * max(
+        max(0.0, min(1.0, (t - float(cue["offset"]) + 0.3) / 0.3,
+                     (float(cue["end"]) + 0.4 - t) / 0.5))
+        for cue in VOICES
+    )
     v = VL[i]
     L[i] = L[i] * duck * MUSIC + v
     R[i] = R[i] * duck * MUSIC + v

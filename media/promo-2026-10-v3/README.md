@@ -1,8 +1,8 @@
 # AI Voice Notes promo source
 
 Source for the published October 2026 v3 product film. This directory includes
-the Remotion compositions, timeline, original synthesized score, the used voice
-take, and the local Inter font with its OFL license.
+the Remotion compositions, timeline, original synthesized score, both used voice
+takes, and the local Inter font with its OFL license.
 
 ## Setup
 
@@ -22,8 +22,12 @@ Chromium, set `BROWSER_EXECUTABLE` to its executable path. `NODE_BIN_DIR` can
 optionally prepend a Node runtime to `PATH`; no other project checkout is required.
 
 The audio command regenerates `remotion/public/audio/mix.wav` from the committed
-voice WAV and the Python score. Run it before rendering films in a fresh clone.
+voice WAVs and the Python score. Run it before rendering films in a fresh clone.
 No speech API credentials or network font downloads are needed.
+
+The closing "AI Voice Notes" take starts at 21.35 seconds of film time, so its
+first word meets the wordmark reveal. Both takes share the voice compressor,
+and the music ducks under each line. The 9:16 and 9:19 cuts retain the same sync.
 
 ## Render targets
 
@@ -44,7 +48,7 @@ Contact sheets and measurements need `ffmpeg` and `ffprobe` on `PATH`, or
 also detect Remotion's bundled binaries automatically.
 
 `out/`, generated audio, caches, dependencies, and the unused alternate voice take
-are excluded from Git. The used voice take is intentionally included so a fresh
+are excluded from Git. Both used voice takes are intentionally included so a fresh
 clone can regenerate the soundtrack. Existing exports are not changed by saving
 these sources. `NOTES.md` contains historical design notes and measurements,
 including superseded descriptions; this README describes the current workflow.
