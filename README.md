@@ -104,3 +104,6 @@ Cloud mode uses a bring-your-own-key model. AI Voice Notes validates the key, di
 Built by [Akbar Azizov](https://www.akbar02work.xyz) as a portfolio-focused Android project.
 
 [Read the AI Voice Notes case study →](https://www.akbar02work.xyz/projects/voicenotes)
+
+The product film's [Remotion source and render instructions](media/promo-2026-10-v3/README.md)
+are included in this repository. Generated exports and dependencies are excluded.

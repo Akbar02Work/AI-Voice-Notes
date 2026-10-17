@@ -1,0 +1,11 @@
+remotion/node_modules
+.cache/
+out/
+remotion/public/sheet/
+
+# Generated audio, caches, and unused alternate voice take
+remotion/public/audio/
+audio/mix.measure.json
+__pycache__/
+*.pyc
+audio/src/voice-take-b.*
