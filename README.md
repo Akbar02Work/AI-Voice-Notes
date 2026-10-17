@@ -13,7 +13,7 @@ The project focuses on a polished recording flow, recoverable failure states, se
 
 Say it messy. AI cleans it up.
 
-https://github.com/user-attachments/assets/1e732031-758c-4114-ad42-767aa66912da
+https://github.com/user-attachments/assets/af4a02a7-2443-4f9e-ad20-f32923776069
 
 ## Download
 
